@@ -8,7 +8,7 @@ import { APP_PATH } from '@/player/app-route'
 import { cycleAt } from '@/player/format'
 import { useReplay } from '@/player/store'
 
-import { CLIP_NAME, type Clip } from './clip'
+import { CLIP_NAME, type Clip, clipLink } from './clip'
 import { ClipCanvas } from './clip-canvas'
 import type { FrameWindow } from './clip-windows'
 import { COPY } from './copy'
@@ -187,7 +187,11 @@ export function Landing() {
   const pick = () => input.current?.click()
 
   useEffect(() => {
+    const before = document.title
     document.title = COPY.title
+    return () => {
+      document.title = before
+    }
   }, [])
 
   return (
@@ -205,7 +209,7 @@ export function Landing() {
           <StatsDemo clip={clip} />
         </Section>
         <Section body={COPY.link.body} id="link" title={COPY.link.title}>
-          <LinkFigure />
+          <LinkFigure href={clipLink()} />
         </Section>
         <Section body={COPY.keys.body} id="teclado" title={COPY.keys.title}>
           <KeysFigure />

@@ -19,4 +19,11 @@ describe('forwardsToApp', () => {
     expect(forwardsToApp('', '')).toBe(false)
     expect(forwardsToApp('?', '#')).toBe(false)
   })
+
+  test('keeps section anchors and tracking parameters on the landing page', () => {
+    expect(forwardsToApp('', 'comparacao')).toBe(false)
+    expect(forwardsToApp('', '#lances')).toBe(false)
+    expect(forwardsToApp('?utm_source=forum', '')).toBe(false)
+    expect(forwardsToApp('?fbclid=abc', '#numeros')).toBe(false)
+  })
 })

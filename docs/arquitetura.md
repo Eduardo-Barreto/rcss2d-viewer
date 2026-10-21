@@ -47,7 +47,7 @@ rcg → analysis → render → player → components, routes
 ## Endereços
 
 - `/` é a página inicial (`src/components/landing/`), que toca um trecho real da final da RoboCup 2026 com o próprio renderer. O app fica em `/app`. Ver o [ADR 0005](adr/0005-landing.md).
-- A raiz com qualquer busca ou `#` redireciona para `/app` com os dois intactos, então links antigos como `/?url=…#t=120` continuam abrindo o lance.
+- A raiz com `?url=`, `?live=` ou `#t=` redireciona para `/app` com a busca e o `#` intactos, então links antigos como `/?url=…#t=120` continuam abrindo o lance.
 - `/app?url=https://…/partida.rcg.gz` abre o log ao entrar.
 - `/app?live=ws://127.0.0.1:6100` preenche o campo da ponte; a conexão espera o clique em "Conectar". Só aceita `ws://` em `127.0.0.1` ou `localhost`, ou `wss://`.
 - `#t=1234` pula para o ciclo 1234 depois de ler. Ao pausar, o viewer escreve o ciclo atual no `#t=`, então copiar o endereço compartilha o lance.

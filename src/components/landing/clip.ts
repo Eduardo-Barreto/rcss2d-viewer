@@ -1,9 +1,11 @@
 import { type Analysis, analyzeMatch } from '@/analysis/analyze'
+import { APP_PATH } from '@/player/app-route'
+import { addressOf } from '@/player/deep-link'
 import { type Moment, momentsOf } from '@/player/moments'
 import { loadMatch } from '@/rcg/load'
 import type { Match } from '@/rcg/types'
 
-import { type FrameWindow, clipWindows } from './clip-windows'
+import { type FrameWindow, GOAL_CYCLE, clipWindows } from './clip-windows'
 import clipUrl from './clip/robocup2026-final.rcg.gz?url'
 
 /** File name the example match opens under in the app. */
@@ -25,6 +27,12 @@ async function clipOf(bytes: Blob): Promise<Clip> {
   const match = await loadMatch({ kind: 'file', file: bytes, name: CLIP_NAME }, () => undefined)
   const analysis = analyzeMatch(match)
   return { match, analysis, moments: momentsOf(match, analysis), ...clipWindows(match) }
+}
+
+/** The address that opens the example clip in the app at the goal, the way a shared link does. */
+export function clipLink(): string {
+  const url = new URL(clipUrl, window.location.origin).href
+  return `${window.location.origin}${addressOf(APP_PATH, url, GOAL_CYCLE)}`
 }
 
 let pending: Promise<Clip> | null = null

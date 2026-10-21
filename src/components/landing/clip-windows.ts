@@ -9,7 +9,8 @@ export interface FrameWindow {
 }
 
 const HERO_FROM_CYCLE = 2600
-const GOAL_CYCLE = 2711
+/** The cycle of the goal in the example clip. */
+export const GOAL_CYCLE = 2711
 const AFTER_GOAL_FRAMES = 24
 const STILL_BEFORE_GOAL_FRAMES = 5
 
@@ -22,6 +23,6 @@ export function clipWindows(match: Match): { hero: FrameWindow; whole: FrameWind
   const still = Math.max(from, goal - STILL_BEFORE_GOAL_FRAMES)
   return {
     hero: { from, to: Math.max(from, to), still },
-    whole: { from: 0, to: last, still },
+    whole: { from: 0, to: last, still: goal },
   }
 }

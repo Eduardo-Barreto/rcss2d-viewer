@@ -16,6 +16,16 @@ describe('Comparison', () => {
     expect(within(table).getByRole('columnheader', { name: COPY.comparison.monitor })).toBeVisible()
   })
 
+  test('explains the marks with a visible legend', () => {
+    render(<Comparison />)
+    const legend = screen.getByRole('list', { name: COPY.comparison.legend })
+    expect(
+      within(legend)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Sim', 'Em parte', 'Não'])
+  })
+
   test('keeps the rows where rcssmonitor wins', () => {
     render(<Comparison />)
     const row = screen.getByRole('rowheader', { name: 'Medir distância' }).closest('tr')
@@ -45,18 +55,19 @@ describe('KeysFigure', () => {
 })
 
 describe('LinkFigure', () => {
-  test('highlights the cycle part of the address', () => {
-    render(<LinkFigure />)
+  test('links to the address it shows and highlights the cycle', () => {
+    const href = 'https://rcssviewer.barreto.sh/app?url=https%3A%2F%2Fx.dev%2Fa.rcg.gz#t=2711'
+    render(<LinkFigure href={href} />)
+    expect(screen.getByRole('link', { name: /x\.dev%2Fa\.rcg\.gz/ })).toHaveAttribute('href', href)
     expect(screen.getByText('#t=2711')).toBeVisible()
   })
 })
 
 describe('SafetyFacts', () => {
-  test('pairs each number with what it limits', () => {
+  test('states the parser limits from the parser itself', () => {
     render(<SafetyFacts />)
-    for (const fact of COPY.safety.facts) {
-      expect(screen.getByText(fact.value)).toBeVisible()
-      expect(screen.getByText(fact.text)).toBeVisible()
-    }
+    expect(screen.getAllByRole('listitem')).toHaveLength(COPY.safety.facts.length)
+    expect(screen.getByText('Até 512 MiB de texto descompactado.')).toBeVisible()
+    expect(screen.getByText('Até 40 mil quadros por partida.')).toBeVisible()
   })
 })

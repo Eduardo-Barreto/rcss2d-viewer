@@ -81,6 +81,11 @@ verify:
 e2e *args:
     bunx playwright test "$@"
 
+# Cut cycles from..to out of a text .rcg into a gzipped clip (how the landing clip was made, ADR 0004)
+[group('dev')]
+clip-rcg input from to output:
+    bun scripts/clip-rcg.ts "$@"
+
 # Refuse a diff that changes src/ without touching a test
 [group('quality')]
 policy:

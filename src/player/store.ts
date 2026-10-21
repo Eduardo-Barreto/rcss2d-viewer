@@ -143,6 +143,10 @@ function clampFrame(match: Match | null, frame: number): number {
   return Math.min(Math.max(frame, 0), lastFrame(match))
 }
 
+function readyState(match: Match, name: string, url: string | null) {
+  return { ...EMPTY, status: 'ready' as const, name, url, match, analysis: analyzeMatch(match) }
+}
+
 function errorText(error: unknown): string {
   if (error instanceof RcgError) return error.message
   return 'Não consegui ler esse arquivo.'
@@ -172,7 +176,7 @@ export const useReplay = create<ReplayState>()(
             controller.signal,
           )
           if (pending === controller) {
-            get().show(match, sourceName(source), source.kind === 'url' ? source.url : null)
+            set(readyState(match, sourceName(source), source.kind === 'url' ? source.url : null))
           }
         } catch (error) {
           if (controller.signal.aborted) return
@@ -183,7 +187,9 @@ export const useReplay = create<ReplayState>()(
       },
 
       show(match, name, url = null) {
-        set({ ...EMPTY, status: 'ready', name, url, match, analysis: analyzeMatch(match) })
+        pending?.abort()
+        pending = null
+        set(readyState(match, name, url))
       },
 
       clearError() {

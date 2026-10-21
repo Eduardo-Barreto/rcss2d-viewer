@@ -9,8 +9,8 @@ Quem chega em https://rcssviewer.barreto.sh sem um log na mão via só o botão 
 ## Decisão
 
 - A raiz mostra a página inicial (`src/components/landing/`) e o app vai para `/app` (`src/routes/app.tsx`).
-- Se a raiz chega com qualquer busca ou `#`, o `beforeLoad` de `src/routes/index.tsx` redireciona para `/app` com a busca e o `#` intactos, trocando a entrada do histórico (`forwardsToApp` em `src/player/app-route.ts`). `/?url=…#t=120` vira `/app?url=…#t=120`, e o mesmo vale para `?live=`.
-- Soltar ou escolher um arquivo na página inicial começa a leitura na store e navega para `/app`, que mostra o progresso. Há um único `<input type=file>` na página.
+- Se a raiz chega com `?url=`, `?live=` ou `#t=`, o `beforeLoad` de `src/routes/index.tsx` redireciona para `/app` com a busca e o `#` intactos, trocando a entrada do histórico (`forwardsToApp` em `src/player/app-route.ts`). `/?url=…#t=120` vira `/app?url=…#t=120`. Âncora de seção (`/#comparacao`) e parâmetro de rastreio (`?utm_source=`) ficam na página inicial.
+- Soltar ou escolher um arquivo na página inicial começa a leitura na store e navega para `/app`, que mostra o progresso. Há um único `<input type=file>` na página. "Abrir este lance no app" entrega o trecho já lido para a store; `show` cancela qualquer leitura ainda em andamento, para um download antigo não sobrescrever o lance.
 - O topo e as seções usam o próprio renderer (`drawScene`) num canvas pequeno, tocando um trecho real. O canvas só anda visível e com a aba na frente (`IntersectionObserver` e `visibilitychange`). Com `prefers-reduced-motion` fica parado num quadro fixo, cinco quadros antes do gol. O quadro do topo tem `aspect-ratio` fixo, então nada pula quando o trecho carrega.
 - Todo texto da página fica em `src/components/landing/copy.ts`, para uma versão em inglês ser uma troca de módulo.
 - A tabela contra o rcssmonitor só afirma o que está no código dos dois lados, incluindo as linhas em que o rcssmonitor ganha. As linhas do modo ao vivo dependem do PR do modo ao vivo.
@@ -22,7 +22,7 @@ Quem chega em https://rcssviewer.barreto.sh sem um log na mão via só o botão 
 - Origem: página Logs & Bins da RoboCup 2026 em rcss.dev, arquivo `rc26_day4_finals_logs.tar.gz` (Google Drive, id `1IpXRyGrj9O6maZDPbe1YXu6bVWw8e-hY`).
 - Log dentro do arquivo: `logs/U/GdwD62P/GdwD62P_server1_HELIOS2026_0-vs-YuShan2026_1.rcg` (ULG6), sha256 `8783fe04bf9bbbf873e5cf1825280d1313338d8dac29917f79651ff7e89eba29`.
 - Ciclos 2490 a 2725: 316 quadros, com a falta do ciclo 2516, dois chutes a gol e o gol do YuShan2026 no ciclo 2711.
-- Para refazer: `bun scripts/clip-rcg.ts <log.rcg> 2490 2725 src/components/landing/clip/robocup2026-final.rcg.gz`. O script guarda o cabeçalho inteiro (parâmetros, tipos de jogador e os logos dos times do ciclo 0) e o último `playmode` e `team` antes do trecho, para o placar e o modo de jogo começarem certos.
+- Para refazer: `just clip-rcg <log.rcg> 2490 2725 src/components/landing/clip/robocup2026-final.rcg.gz`. O script guarda o cabeçalho inteiro (parâmetros, tipos de jogador e os logos dos times do ciclo 0) e o último `playmode` e `team` antes do trecho, para o placar e o modo de jogo começarem certos.
 
 O arquivo é servido como asset com hash e lido pelo mesmo `loadMatch` do app, sem caminho especial.
 

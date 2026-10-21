@@ -3,6 +3,8 @@
  * same shape. The replay app keeps its own strings next to its components.
  */
 
+import { DEFAULT_LIMITS } from '@/rcg/parser'
+
 /** Who has a feature in the comparison table. */
 export type Support = 'yes' | 'no' | 'partial'
 
@@ -15,11 +17,9 @@ export interface ComparisonRow {
   live?: boolean
 }
 
-/** A fact of the "your file stays with you" section. */
-export interface Fact {
-  value: string
-  text: string
-}
+const MIB = 1_048_576
+const THOUSAND = 1000
+const { maxBytes, maxFrames } = DEFAULT_LIMITS
 
 /** The pt-BR copy of the landing page. */
 export const COPY = {
@@ -75,21 +75,20 @@ export const COPY = {
   link: {
     title: 'Um link abre a partida no lance',
     body: 'Se o log está num endereço https, o link abre a partida no ciclo certo. Quando você pausa, o #t= da barra de endereço passa a apontar para onde parou.',
-    figure: 'Um link para o ciclo 2711 da final.',
-    address: 'rcssviewer.barreto.sh/app?url=https://…/final.rcg.gz#t=2711',
+    figure: 'Abre a final no ciclo 2711.',
   },
   keys: {
     title: 'Dá para fazer tudo pelo teclado',
-    body: 'A lista abaixo é a mesma que o app mostra quando você aperta ?.',
+    body: 'É a mesma lista que o app mostra quando você aperta ?.',
     figure: 'Atalhos do replay',
   },
   live: {
     title: 'Ao vivo, voltando no meio do jogo',
-    body: 'Uma ponte pequena (just relay) liga o monitor UDP do rcssserver ao navegador por WebSocket. Dá para voltar um lance com o jogo rolando, apertar End para voltar ao vivo, dar a saída de bola e salvar a partida como .rcg v6.',
+    body: 'Uma ponte pequena, que roda ao lado do rcssserver, liga o monitor UDP dele ao navegador por WebSocket. Dá para voltar um lance com o jogo rolando, apertar End para voltar ao vivo, dar a saída de bola e salvar a partida como .rcg v6.',
     figure: 'O caminho dos dados no modo ao vivo.',
     steps: [
       { name: 'rcssserver', detail: 'UDP, porta 6000' },
-      { name: 'just relay', detail: 'WebSocket em 127.0.0.1:6100' },
+      { name: 'ponte', detail: 'WebSocket em 127.0.0.1:6100' },
       { name: 'rcssviewer', detail: 'no navegador' },
     ],
   },
@@ -97,11 +96,11 @@ export const COPY = {
     title: 'O arquivo fica com você',
     body: 'O log é lido num Web Worker, no seu navegador. Nada é enviado para servidor nenhum, e um arquivo grande demais ou malformado é recusado antes de travar a aba.',
     facts: [
-      { value: '0', text: 'bytes do seu log enviados para fora' },
-      { value: '512 MiB', text: 'de texto descompactado, no máximo' },
-      { value: '40 mil', text: 'quadros por partida, no máximo' },
-      { value: 'https', text: 'é o único endereço remoto aceito' },
-    ] satisfies Fact[],
+      'Nenhum byte do log sai do seu navegador.',
+      `Até ${maxBytes / MIB} MiB de texto descompactado.`,
+      `Até ${maxFrames / THOUSAND} mil quadros por partida.`,
+      'Endereço remoto, só https.',
+    ],
   },
   comparison: {
     title: 'rcssviewer e rcssmonitor, lado a lado',
@@ -111,7 +110,8 @@ export const COPY = {
     viewer: 'rcssviewer',
     monitor: 'rcssmonitor',
     support: { yes: 'Sim', no: 'Não', partial: 'Em parte' },
-    liveNote: 'O modo ao vivo entra junto com a mudança que o traz.',
+    liveNote: 'Precisa da ponte do modo ao vivo rodando ao lado do rcssserver.',
+    legend: 'Legenda',
     rows: [
       {
         feature: 'Onde roda',
@@ -145,13 +145,13 @@ export const COPY = {
       },
       {
         feature: 'Áreas de defesa, desarme e chute',
-        viewer: { support: 'no', text: 'Não tem' },
+        viewer: { support: 'partial', text: 'Só a área de chute' },
         monitor: { support: 'yes', text: 'Camadas no campo' },
       },
       {
         feature: 'Desenhos do time no log',
         viewer: { support: 'no', text: 'Ignora' },
-        monitor: { support: 'yes', text: 'Pontos, círculos e linhas' },
+        monitor: { support: 'partial', text: 'Só em log binário antigo (v2, v3)' },
       },
       {
         feature: 'Mensagens do log',
@@ -160,7 +160,7 @@ export const COPY = {
       },
       {
         feature: 'Parâmetros do servidor',
-        viewer: { support: 'yes', text: 'Todos, com busca' },
+        viewer: { support: 'partial', text: 'server_param e player_param, com busca' },
         monitor: { support: 'partial', text: 'Só os tipos de jogador' },
       },
       {

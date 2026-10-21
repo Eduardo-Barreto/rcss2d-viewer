@@ -50,19 +50,23 @@ export function KeysFigure() {
   )
 }
 
-/** A shared address that opens the final at the goal. */
-export function LinkFigure() {
+/** The address that opens the final at the goal, as a real link. */
+export function LinkFigure({ href }: { href: string }) {
+  const [address, cycle] = href.split('#')
   return (
     <figure className="flex flex-col gap-3">
-      <div className="flex items-center gap-2 rounded-[14px] bg-card px-3 py-2.5 shadow-island">
+      <a
+        className="flex items-center gap-2 rounded-[14px] bg-card px-3 py-2.5 shadow-island transition-shadow duration-150 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring pointer-fine:hover:shadow-artboard"
+        href={href}
+      >
         <Link2 aria-hidden className="size-4 flex-none text-muted-foreground" />
-        <code className="min-w-0 flex-1 font-mono text-[12px] leading-5 break-all md:overflow-x-auto md:break-normal md:whitespace-nowrap">
-          {COPY.link.address.split('#')[0]}
-          <mark className="rounded-[4px] bg-foreground px-1 text-background">
-            #{COPY.link.address.split('#')[1]}
-          </mark>
+        <code className="min-w-0 flex-1 font-mono text-[12px] leading-5 break-all">
+          {address}
+          {cycle === undefined ? null : (
+            <mark className="rounded-[4px] bg-foreground px-1 text-background">#{cycle}</mark>
+          )}
         </code>
-      </div>
+      </a>
       <figcaption className={CAPTION}>{COPY.link.figure}</figcaption>
     </figure>
   )
@@ -93,19 +97,20 @@ export function LiveFigure() {
   )
 }
 
-/** The limits that keep a bad file from hurting the tab, as a short list of numbers. */
+/** The limits that keep a bad file from hurting the tab. */
 export function SafetyFacts() {
   return (
-    <dl className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
+    <ul className="grid gap-x-8 gap-y-2 text-[15px] leading-6 md:grid-cols-2">
       {COPY.safety.facts.map((fact) => (
-        <div className="flex flex-col gap-1 border-t border-foreground/15 pt-3" key={fact.text}>
-          <dt className="order-2 text-[13px] text-pretty text-muted-foreground">{fact.text}</dt>
-          <dd className="order-1 text-[22px] leading-7 font-semibold tracking-[-0.01em] tabular-nums">
-            {fact.value}
-          </dd>
-        </div>
+        <li className="flex items-baseline gap-3" key={fact}>
+          <span
+            aria-hidden
+            className="size-1.5 flex-none translate-y-[-2px] rounded-full bg-foreground"
+          />
+          {fact}
+        </li>
       ))}
-    </dl>
+    </ul>
   )
 }
 
@@ -113,6 +118,25 @@ const MARK: Record<Support, string> = {
   yes: 'bg-foreground',
   partial: 'bg-foreground/45',
   no: 'border border-foreground/40',
+}
+
+const SUPPORTS: Support[] = ['yes', 'partial', 'no']
+
+function Legend() {
+  const { comparison } = COPY
+  return (
+    <ul
+      aria-label={comparison.legend}
+      className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground"
+    >
+      {SUPPORTS.map((support) => (
+        <li className="flex items-center gap-1.5" key={support}>
+          <span aria-hidden className={cn('size-2 rounded-full', MARK[support])} />
+          {comparison.support[support]}
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 function Cell({ value }: { value: ComparisonRow['viewer'] }) {
@@ -133,6 +157,7 @@ export function Comparison() {
   const { comparison } = COPY
   return (
     <div className="flex flex-col gap-3">
+      <Legend />
       <div className="overflow-x-auto rounded-[18px] bg-card shadow-island">
         <table className="w-full border-collapse text-left text-[13px]">
           <caption className="sr-only">{comparison.caption}</caption>

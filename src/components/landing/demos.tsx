@@ -91,7 +91,7 @@ export function MomentsDemo({ clip }: { clip: Clip | null }) {
   const current = clip === null ? null : activeMoment(clip.moments, frame)
   return (
     <figure className="flex flex-col gap-3">
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex flex-col gap-3">
           <PitchFrame>
             <ClipCanvas clip={clip} onFrame={setFrame} span={wholeSpan} />
@@ -109,7 +109,7 @@ export function MomentsDemo({ clip }: { clip: Clip | null }) {
               key={`${moment.kind}-${moment.frame}-${moment.slot}`}
             >
               <span aria-hidden className={cn('size-2 flex-none rounded-full', DOT[moment.kind])} />
-              <span className="min-w-0 flex-1 truncate">{moment.text}</span>
+              <span className="min-w-0 flex-1 text-pretty">{moment.text}</span>
               <span className="font-mono text-[12px] tabular-nums">{moment.cycle}</span>
             </li>
           ))}
@@ -133,7 +133,9 @@ export function LayersDemo({ clip }: { clip: Clip | null }) {
     return () => window.clearInterval(timer)
   }, [pinned, reduced])
 
-  const layer = pinned === 'auto' ? layerAt(tick) : pinned
+  const choices = reduced ? LAYER_KEYS : (['auto', ...LAYER_KEYS] as const)
+  const chosen = reduced && pinned === 'auto' ? LAYER_KEYS[0] : pinned
+  const layer = chosen === 'auto' ? layerAt(tick) : chosen
   const overlays = useMemo<Overlays>(() => overlaysOf(layer), [layer])
   const heatmap = useMemo(
     () =>
@@ -157,13 +159,13 @@ export function LayersDemo({ clip }: { clip: Clip | null }) {
       <fieldset>
         <legend className="sr-only">{COPY.layers.group}</legend>
         <div className="flex flex-wrap gap-1 rounded-[14px] bg-card p-1 shadow-island">
-          {(['auto', ...LAYER_KEYS] as const).map((key) => (
+          {choices.map((key) => (
             <label
               className="relative flex h-9 cursor-pointer items-center rounded-[10px] px-3 text-[13px] font-medium text-muted-foreground transition-[background-color,color,scale] duration-120 ease-(--ease-out) select-none has-checked:bg-foreground has-checked:text-background has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring active:scale-[0.97] pointer-fine:hover:text-foreground pointer-fine:has-checked:hover:text-background"
               key={key}
             >
               <input
-                checked={pinned === key}
+                checked={chosen === key}
                 className="sr-only"
                 name={name}
                 onChange={() => setPinned(key)}
