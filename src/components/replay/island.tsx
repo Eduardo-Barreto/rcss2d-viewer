@@ -4,17 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
+/** The island surface, for an element that needs its own tag: card, 14 px corners, shadow. */
+export const ISLAND =
+  'z-10 flex items-center gap-0.5 rounded-[14px] bg-card p-1 text-card-foreground shadow-island'
+
 /** A floating island: card surface, 14 px corners, 4 px padding and the island shadow. */
 export function Island({ className, ...props }: ComponentProps<'div'>) {
-  return (
-    <div
-      className={cn(
-        'z-10 flex items-center gap-0.5 rounded-[14px] bg-card p-1 text-card-foreground shadow-island',
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <div className={cn(ISLAND, className)} {...props} />
 }
 
 /**
@@ -29,7 +25,7 @@ export function IslandButton({
   return (
     <Button
       className={cn(
-        'h-9 min-w-9 gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium transition-[background-color,transform] duration-100 ease-(--ease) active:scale-[0.97] aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/85 aria-pressed:hover:text-background dark:aria-pressed:hover:bg-foreground/85 max-[720px]:h-10 max-[720px]:min-w-10 has-[>svg]:px-2.5',
+        'h-9 min-w-9 gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium transition-[background-color,transform] duration-100 ease-(--ease) active:scale-[0.97] aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/85 aria-pressed:hover:text-background dark:aria-pressed:hover:bg-foreground/85 phone:h-10 phone:min-w-10 has-[>svg]:px-2.5',
         className,
       )}
       variant={variant}

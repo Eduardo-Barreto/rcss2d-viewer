@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { addressOf, cycleHash, parseDeepLink } from '@/player/deep-link'
@@ -10,11 +10,11 @@ import type { Match } from '@/rcg/types'
 import { HelpDialog } from './help-dialog'
 import { Layers } from './layers'
 import { OpenLog } from './open-log'
-import { Panel, PanelToggle } from './panel/panel'
+import { Panel, PanelToggle, SHEET_SHARE } from './panel/panel'
 import { type Insets, PitchView } from './pitch-view'
 import { Scoreboard } from './scoreboard'
 import { Transport } from './transport'
-import { useNarrow } from './use-narrow'
+import { useCompact, useNarrow, useViewportHeight } from './use-narrow'
 import { usePlayback } from './use-playback'
 import { useShortcuts } from './use-shortcuts'
 import { Zoom } from './zoom'
@@ -22,7 +22,8 @@ import { Zoom } from './zoom'
 const PANEL_WIDTH = 340
 const EDGE = 12
 const TOP_INSET = 64
-const TOP_INSET_NARROW = 136
+const TOP_INSET_COMPACT = 136
+const PERCENT = 100
 const BOTTOM_INSET = 116
 const TOOLTIP_DELAY_MS = 400
 
@@ -112,29 +113,48 @@ function useDeepLink(): void {
   }, [match, playing])
 }
 
-function useInsets(narrow: boolean): Insets {
-  const panelOpen = useReplay((s) => s.panelOpen)
-  const right = !narrow && panelOpen ? PANEL_WIDTH + EDGE * 2 : EDGE
-  const top = narrow ? TOP_INSET_NARROW : TOP_INSET
-  return useMemo(() => ({ top, right, bottom: BOTTOM_INSET, left: EDGE }), [top, right])
+interface Layout {
+  insets: Insets
+  /** Where the top islands end on the right, clear of the side panel. */
+  right: CSSProperties
+  /** The bottom row: clear of the side panel, and above the sheet when it is open. */
+  row: CSSProperties
 }
 
-function Stage({ narrow }: { narrow: boolean }) {
+function useLayout(): Layout {
+  const panelOpen = useReplay((s) => s.panelOpen)
+  const narrow = useNarrow()
+  const compact = useCompact()
+  const height = useViewportHeight()
+  const side = !narrow && panelOpen ? PANEL_WIDTH + EDGE * 2 : EDGE
+  const sheet = narrow && panelOpen ? Math.round(height * SHEET_SHARE) : 0
+  const top = compact ? TOP_INSET_COMPACT : TOP_INSET
+  return useMemo(
+    () => ({
+      insets: { top, right: side, bottom: BOTTOM_INSET + sheet, left: EDGE },
+      right: { right: side },
+      row:
+        sheet > 0
+          ? { right: side, bottom: `calc(${SHEET_SHARE * PERCENT}svh + ${EDGE}px)` }
+          : { right: side },
+    }),
+    [top, side, sheet],
+  )
+}
+
+function Stage() {
   const match = useReplay((s) => s.match)
   const analysis = useReplay((s) => s.analysis)
-  const panelOpen = useReplay((s) => s.panelOpen)
   const name = useReplay((s) => s.name)
+  const narrow = useNarrow()
+  const compact = useCompact()
   const [help, setHelp] = useState(false)
   const toggleHelp = useCallback(() => setHelp((open) => !open), [])
   const moments = useMemo(
     () => (match === null || analysis === null ? [] : momentsOf(match, analysis)),
     [match, analysis],
   )
-  const insets = useInsets(narrow)
-  const rightEdge = useMemo(
-    () => ({ right: !narrow && panelOpen ? PANEL_WIDTH + EDGE * 2 : EDGE }),
-    [narrow, panelOpen],
-  )
+  const layout = useLayout()
 
   usePlayback()
   useShortcuts(moments, toggleHelp)
@@ -142,19 +162,27 @@ function Stage({ narrow }: { narrow: boolean }) {
   return (
     <main className="fixed inset-0 overflow-hidden bg-(--pitch)">
       <h1 className="sr-only">Replay: {name}</h1>
-      <PitchView insets={insets} />
-      <Scoreboard className="fixed top-safe-3 left-safe-3 max-[720px]:right-safe-3" />
+      <PitchView insets={layout.insets} />
+      <Scoreboard
+        className="fixed top-safe-3 left-safe-3 compact:mx-auto compact:max-w-[560px]"
+        style={compact ? layout.right : undefined}
+      />
       <div
-        className="fixed top-safe-3 flex justify-end max-[720px]:top-safe-[76px] max-[720px]:left-safe-3"
-        style={rightEdge}
+        className="fixed top-safe-3 flex justify-end compact:top-safe-[76px] compact:left-safe-3 compact:justify-center"
+        style={layout.right}
       >
-        <Layers className="max-w-full overflow-x-auto" onHelp={toggleHelp}>
-          <PanelToggle />
+        <Layers className="max-w-full overflow-x-auto" follow={compact} onHelp={toggleHelp}>
+          {narrow ? null : <PanelToggle />}
         </Layers>
       </div>
-      <div className="fixed bottom-safe-3 left-safe-3 flex items-end gap-2" style={rightEdge}>
-        <Transport className="min-w-0 flex-1" moments={moments} />
-        <Zoom className="max-[720px]:hidden" />
+      <div
+        className="fixed bottom-safe-3 left-safe-3 flex items-end gap-2 transition-[bottom] duration-240 ease-(--ease-drawer)"
+        style={layout.row}
+      >
+        <Transport className="min-w-0 flex-1" moments={moments}>
+          {narrow ? <PanelToggle /> : null}
+        </Transport>
+        <Zoom className="compact:hidden" />
       </div>
       <Panel moments={moments} width={PANEL_WIDTH} />
       <HelpDialog onOpenChange={setHelp} open={help} />
@@ -176,7 +204,7 @@ export function ReplayView() {
 
   return (
     <TooltipProvider delayDuration={TOOLTIP_DELAY_MS}>
-      {status === 'ready' ? <Stage narrow={narrow} /> : <OpenLog dragging={dragging} />}
+      {status === 'ready' ? <Stage /> : <OpenLog dragging={dragging} />}
       {status === 'ready' && dragging ? (
         <div
           aria-hidden

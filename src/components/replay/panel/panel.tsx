@@ -1,4 +1,4 @@
-import { PanelRight } from 'lucide-react'
+import { PanelRight, X } from 'lucide-react'
 import { Tabs } from 'radix-ui'
 import { useMemo } from 'react'
 
@@ -27,7 +27,10 @@ function isTab(value: string): value is PanelTab {
   return TABS.some((each) => each.tab === value)
 }
 
-function PanelTabs({ moments }: { moments: Moment[] }) {
+/** Share of the screen's height the bottom sheet takes on a phone. Matches `h-[45svh]`. */
+export const SHEET_SHARE = 0.45
+
+function PanelTabs({ moments, onClose }: { moments: Moment[]; onClose?: () => void }) {
   const tab = useReplay((s) => s.tab)
   const setTab = useReplay((s) => s.setTab)
   return (
@@ -53,6 +56,11 @@ function PanelTabs({ moments }: { moments: Moment[] }) {
             </Tabs.Trigger>
           ))}
         </Tabs.List>
+        {onClose === undefined ? null : (
+          <IslandButton aria-label="Fechar painel" className="ml-1 flex-none" onClick={onClose}>
+            <X aria-hidden className="size-4" />
+          </IslandButton>
+        )}
       </div>
       <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 outline-none" value="stats">
         <StatsTab />
@@ -81,7 +89,10 @@ export interface PanelProps {
   className?: string
 }
 
-/** The analysis panel: a card on the right on wide screens, a bottom sheet on a phone. */
+/**
+ * The analysis panel: a card on the right on wide screens, a bottom sheet on a phone. The sheet
+ * is not modal, so the pitch and the controls above it keep working while it is open.
+ */
 export function Panel({ moments, width, className }: PanelProps) {
   const open = useReplay((s) => s.panelOpen)
   const setPanelOpen = useReplay((s) => s.setPanelOpen)
@@ -90,13 +101,17 @@ export function Panel({ moments, width, className }: PanelProps) {
 
   if (narrow) {
     return (
-      <Sheet onOpenChange={setPanelOpen} open={open}>
-        <SheetContent className="h-[70svh]">
+      <Sheet modal={false} onOpenChange={setPanelOpen} open={open}>
+        <SheetContent className="h-[45svh]" onInteractOutside={(event) => event.preventDefault()}>
           <SheetTitle className="sr-only">Painel da partida</SheetTitle>
           <SheetDescription className="sr-only">
             Números, lances, jogador, mensagens e parâmetros.
           </SheetDescription>
-          <PanelTabs moments={moments} />
+          <span
+            aria-hidden
+            className="mx-auto mt-2 h-1 w-9 flex-none rounded-full bg-foreground/20"
+          />
+          <PanelTabs moments={moments} onClose={() => setPanelOpen(false)} />
         </SheetContent>
       </Sheet>
     )

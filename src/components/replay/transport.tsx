@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import {
   DropdownMenu,
@@ -29,7 +30,7 @@ function Clock() {
   if (match === null) return null
   const end = cycleAt(match, match.frames.count - 1)
   return (
-    <p className="px-1.5 font-mono text-[12px] whitespace-nowrap text-muted-foreground tabular-nums max-[720px]:hidden">
+    <p className="px-1.5 font-mono text-[12px] whitespace-nowrap text-muted-foreground tabular-nums @max-md:hidden">
       <span className="text-foreground">{clockOf(cycle, stepMs)}</span> / {clockOf(end, stepMs)}
     </p>
   )
@@ -75,16 +76,18 @@ function SpeedMenu() {
 export interface TransportProps {
   moments: Moment[]
   className?: string
+  /** Extra buttons at the end of the controls. */
+  children?: ReactNode
 }
 
 /** Playback controls over the timeline. */
-export function Transport({ moments, className }: TransportProps) {
+export function Transport({ moments, className, children }: TransportProps) {
   const playing = useReplay((s) => s.playing)
   const togglePlay = useReplay((s) => s.togglePlay)
   const step = useReplay((s) => s.step)
 
   return (
-    <Island className={cn('flex-col items-stretch gap-1 px-3 pt-2 pb-1', className)}>
+    <Island className={cn('@container flex-col items-stretch gap-1 px-3 pt-2 pb-1', className)}>
       <Timeline moments={moments} />
       <div className="flex items-center gap-0.5">
         <Hint label="Lance anterior" shortcut="Shift E">
@@ -125,6 +128,7 @@ export function Transport({ moments, className }: TransportProps) {
         <SpeedMenu />
         <span className="flex-1" />
         <Clock />
+        {children}
       </div>
     </Island>
   )

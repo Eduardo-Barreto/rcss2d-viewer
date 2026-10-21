@@ -1,18 +1,13 @@
 import {
   BatteryMedium,
   ChevronDown,
-  CircleHelp,
   Eye,
   Flag,
   Flame,
   FolderOpen,
-  ImageDown,
   type LucideIcon,
-  Moon,
   Spline,
-  Sun,
 } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import type { ReactNode } from 'react'
 
 import {
@@ -29,6 +24,7 @@ import { type HeatSubject, useReplay } from '@/player/store'
 import type { Overlays } from '@/render/scene'
 
 import { Hint, Island, IslandButton, IslandSeparator } from './island'
+import { MoreMenu } from './more-menu'
 
 interface Layer {
   key: keyof Overlays
@@ -44,7 +40,6 @@ const LAYERS_BEFORE_HEAT: readonly Layer[] = [
 ]
 const STAMINA: Layer = { key: 'stamina', label: 'Fôlego', shortcut: 'S', icon: BatteryMedium }
 
-const REVOKE_AFTER_MS = 1000
 const HEAT_SUBJECTS: readonly HeatSubject[] = ['ball', 'l', 'r', 'selected']
 
 function LayerToggle({ layer }: { layer: Layer }) {
@@ -92,7 +87,7 @@ function HeatToggle() {
           <IslandButton
             aria-label="De quem é o mapa de calor"
             className={cn(
-              'min-w-6 rounded-l-none px-1 hover:bg-current/10 aria-expanded:bg-current/10 has-[>svg]:px-1 dark:hover:bg-current/10 max-[720px]:min-w-7',
+              'min-w-6 rounded-l-none px-1 hover:bg-current/10 aria-expanded:bg-current/10 has-[>svg]:px-1 dark:hover:bg-current/10 phone:min-w-7',
               on && 'text-background hover:text-background aria-expanded:text-background',
             )}
           >
@@ -120,51 +115,18 @@ function HeatToggle() {
   )
 }
 
-function exportImage(name: string, cycle: number): void {
-  const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-pitch]')
-  canvas?.toBlob((blob) => {
-    if (blob === null) return
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `${name.replace(/\.rcg(?:\.gz)?$/i, '')}-ciclo-${cycle}.png`
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(link.href), REVOKE_AFTER_MS)
-  }, 'image/png')
-}
-
-function cycleNow(): number {
-  const { match, frame } = useReplay.getState()
-  return match?.frames.cycle[Math.round(frame)] ?? 0
-}
-
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme()
-  const dark = resolvedTheme === 'dark'
-  const label = dark ? 'Tema claro' : 'Tema escuro'
-  return (
-    <Hint label={label} side="bottom">
-      <IslandButton
-        aria-label={label}
-        className="max-[720px]:hidden"
-        onClick={() => setTheme(dark ? 'light' : 'dark')}
-      >
-        {dark ? <Sun aria-hidden className="size-4" /> : <Moon aria-hidden className="size-4" />}
-      </IslandButton>
-    </Hint>
-  )
-}
-
 /** Props of {@link Layers}. */
 export interface LayersProps {
   onHelp: () => void
+  /** Puts "Seguir a bola" in the overflow menu, for screens without the zoom island. */
+  follow?: boolean
   className?: string
   /** Extra buttons at the end of the island. */
   children?: ReactNode
 }
 
-/** What the pitch draws, plus theme, image export, help and opening another log. */
-export function Layers({ onHelp, className, children }: LayersProps) {
-  const name = useReplay((s) => s.name)
+/** What the pitch draws, an overflow menu and opening another log. */
+export function Layers({ onHelp, follow = false, className, children }: LayersProps) {
   const close = useReplay((s) => s.close)
 
   return (
@@ -175,21 +137,8 @@ export function Layers({ onHelp, className, children }: LayersProps) {
       <HeatToggle />
       <LayerToggle layer={STAMINA} />
       <IslandSeparator />
-      <Hint label="Salvar imagem" side="bottom">
-        <IslandButton
-          aria-label="Salvar imagem do campo"
-          className="max-[720px]:hidden"
-          onClick={() => exportImage(name, cycleNow())}
-        >
-          <ImageDown aria-hidden className="size-4" />
-        </IslandButton>
-      </Hint>
-      <ThemeToggle />
-      <Hint label="Atalhos" shortcut="?" side="bottom">
-        <IslandButton aria-label="Atalhos" className="max-[720px]:hidden" onClick={onHelp}>
-          <CircleHelp aria-hidden className="size-4" />
-        </IslandButton>
-      </Hint>
+      <MoreMenu follow={follow} onHelp={onHelp} />
+      <IslandSeparator />
       <Hint label="Abrir outra partida" side="bottom">
         <IslandButton aria-label="Abrir outra partida" onClick={close}>
           <FolderOpen aria-hidden className="size-4" />

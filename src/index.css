@@ -6,6 +6,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Keep these two in step with `src/components/replay/use-narrow.ts`. */
+@custom-variant compact (@media (max-width: 1100px));
+@custom-variant phone (@media (max-width: 720px));
+
 @theme inline {
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
