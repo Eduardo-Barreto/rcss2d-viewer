@@ -140,4 +140,33 @@ describe('timeline', () => {
     expect(calls.filter((name) => name === 'arc')).toHaveLength(1)
     expect(calls.filter((name) => name === 'fillRect').length).toBeGreaterThan(40)
   })
+
+  test('marks a half end with a short tick, not a full-height line', () => {
+    const rects: { style: string; height: number }[] = []
+    const state = { fillStyle: '' }
+    const ctx = new Proxy(state, {
+      get: (target, name: string) =>
+        name === 'fillRect'
+          ? (_x: number, _y: number, _w: number, h: number) =>
+              rects.push({ style: target.fillStyle, height: h })
+          : () => undefined,
+    })
+    drawTimeline(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the stub answers every method
+      ctx as unknown as CanvasRenderingContext2D,
+      {
+        match,
+        analysis: analyzeMatch(match),
+        marks: [],
+        halves: [0],
+        width: 40,
+        height: 24,
+        dpr: 1,
+        palette: PALETTE,
+      },
+    )
+    const ticks = rects.filter((rect) => rect.style === PALETTE.muted)
+    expect(ticks).toHaveLength(1)
+    expect(ticks[0]?.height).toBe(6)
+  })
 })

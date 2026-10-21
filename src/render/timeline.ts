@@ -17,7 +17,7 @@ export interface TimelineInput {
   match: Match
   analysis: Analysis
   marks: TimelineMark[]
-  /** Frames where a half ends, drawn as dividers. */
+  /** Frames where a half ends, drawn as short ticks through the strip, so none reads as a playhead. */
   halves: number[]
   width: number
   height: number
@@ -34,6 +34,7 @@ const CARD_H = 5
 const WEAK_ALPHA = 0.45
 const STRIP_ALPHA = 0.8
 const HALF_PX = 0.5
+const HALF_TICK_PX = 6
 
 /** Owner of most `play_on` frames in `[start, end)`: 0 left, 1 right, -1 nobody. */
 export function ownerOfRange(match: Match, owner: Int8Array, start: number, end: number): number {
@@ -67,7 +68,8 @@ function drawPossession(
   }
   ctx.globalAlpha = 1
   ctx.fillStyle = palette.muted
-  for (const frame of input.halves) ctx.fillRect(Math.round(x(frame)), 0, 1, height)
+  for (const frame of input.halves)
+    ctx.fillRect(Math.round(x(frame)), height - HALF_TICK_PX, 1, HALF_TICK_PX)
 }
 
 function markColor(palette: Palette, mark: TimelineMark): string {
