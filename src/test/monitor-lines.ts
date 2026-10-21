@@ -1,4 +1,4 @@
-import { playModeId } from '@/rcg/playmodes'
+import { playModeId } from '../rcg/playmodes.ts'
 
 const SHOW_HEAD = /^\(show (?<cycle>\d+)/
 
