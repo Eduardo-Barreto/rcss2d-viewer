@@ -11,6 +11,8 @@ type SetState = (partial: Partial<ReplayState>) => void
 type GetState = () => ReplayState
 
 let connection: LiveConnection | null = null
+/** Bumped each time a session is left, so a late message from an old one is dropped. */
+let session = 0
 let analysisTimer: ReturnType<typeof setTimeout> | null = null
 let analyzedAt = 0
 
@@ -33,6 +35,7 @@ function cancelAnalysis(): void {
 
 /** Stops the live worker, if any, without touching the state. */
 export function leaveLive(): void {
+  session++
   connection?.stop()
   connection = null
   cancelAnalysis()
@@ -90,9 +93,14 @@ export function liveActions(
         name: 'Ao vivo',
         live: { url, phase: 'connecting', server: 'down', end: null, following: true },
       })
+      const id = session
+      const current = () => id === session
       const opened = connector(url, {
-        open: (server) => patch({ phase: 'open', server }),
+        open: (server) => {
+          if (current()) patch({ phase: 'open', server })
+        },
         delta(delta) {
+          if (!current()) return
           const match = live.apply(delta)
           if (match === null) return
           const { live: state, frame } = get()
@@ -100,7 +108,9 @@ export function liveActions(
           set({ status: 'ready', match, frame: following ? lastFrame(match) : frame })
           later()
         },
-        end: finish,
+        end: (reason) => {
+          if (current()) finish(reason)
+        },
       })
       const phase = get().live?.phase
       if (phase === 'connecting' || phase === 'open') connection = opened

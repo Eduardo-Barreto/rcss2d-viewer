@@ -166,6 +166,7 @@ export const useReplay = create<ReplayState>()(
 
       async open(source) {
         pending?.abort()
+        leaveLive()
         const controller = new AbortController()
         pending = controller
         set({ ...EMPTY, status: 'loading', name: sourceName(source) })
@@ -189,6 +190,7 @@ export const useReplay = create<ReplayState>()(
       show(match, name, url = null) {
         pending?.abort()
         pending = null
+        leaveLive()
         set(readyState(match, name, url))
       },
 
