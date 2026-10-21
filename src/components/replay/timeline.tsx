@@ -107,7 +107,7 @@ export function Timeline({ moments }: { moments: Moment[] }) {
       {hover === null ? null : (
         <span
           aria-hidden
-          className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded-[7px] bg-primary px-1.5 py-0.5 font-mono text-[11px] whitespace-nowrap text-primary-foreground tabular-nums"
+          className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded-[7px] bg-primary px-1.5 py-0.5 font-mono text-[12px] whitespace-nowrap text-primary-foreground tabular-nums"
           style={pill}
         >
           {clockOf(cycleAt(match, hover.frame), stepMs)} · {cycleAt(match, hover.frame)}

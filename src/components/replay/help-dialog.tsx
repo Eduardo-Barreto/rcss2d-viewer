@@ -23,7 +23,7 @@ export function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
           {SHORTCUTS.map((shortcut) => (
             <div className="contents" key={shortcut.keys}>
               <dt>
-                <kbd className="rounded-[6px] bg-muted px-1.5 py-0.5 font-mono text-[11px] whitespace-nowrap">
+                <kbd className="rounded-[6px] bg-muted px-1.5 py-0.5 font-mono text-[12px] whitespace-nowrap">
                   {shortcut.keys}
                 </kbd>
               </dt>

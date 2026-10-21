@@ -73,3 +73,18 @@ test.describe('Título da aba', () => {
     await expect(page).toHaveTitle('rcssviewer')
   })
 })
+
+const SMALL_TEXT = `[...document.querySelectorAll('body *')]
+  .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() !== ''))
+  .filter((el) => el.getClientRects().length > 0 && parseFloat(getComputedStyle(el).fontSize) < 12)
+  .map((el) => el.textContent.trim())`
+
+test.describe('Texto', () => {
+  test('não fica abaixo de 12 px', async ({ page }) => {
+    await openFixture(page)
+    expect(await page.evaluate<string[]>(SMALL_TEXT)).toEqual([])
+    await page.locator('button[aria-pressed]').filter({ hasText: /\d/ }).first().click()
+    await page.getByRole('tab', { name: 'Jogador' }).click()
+    expect(await page.evaluate<string[]>(SMALL_TEXT)).toEqual([])
+  })
+})

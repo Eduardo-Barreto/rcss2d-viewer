@@ -60,7 +60,7 @@ function Roster({ side }: { side: Side }) {
       <h3 className="flex items-center gap-2 px-2 text-[12px] font-medium text-muted-foreground">
         <span aria-hidden className={cn('size-2 rounded-full', DOT[side])} />
         {teamName(match, side)}
-        <span className="ml-auto font-mono text-[11px]">toques · corrida</span>
+        <span className="ml-auto font-mono text-[12px]">toques · corrida</span>
       </h3>
       <ul className="flex flex-col">
         {slotsOf(side).map((slot) => {

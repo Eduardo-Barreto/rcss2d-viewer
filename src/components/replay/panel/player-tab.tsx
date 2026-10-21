@@ -93,7 +93,7 @@ function Stamina({ slot }: { slot: number }) {
           y2={SPARK_HEIGHT}
         />
       </svg>
-      <p className="font-mono text-[11px] text-muted-foreground tabular-nums">
+      <p className="font-mono text-[12px] text-muted-foreground tabular-nums">
         esforço {effort.toFixed(DECIMALS)} · recuperação {recovery.toFixed(DECIMALS)}
       </p>
     </section>
@@ -131,7 +131,7 @@ export function PlayerTab() {
       <div className="flex items-center gap-2">
         <span aria-hidden className={cn('size-2.5 rounded-full', DOT[sideOfSlot(slot)])} />
         <h3 className="flex-1 text-[15px] font-semibold">{playerName(match, slot)}</h3>
-        <span className="font-mono text-[11px] text-muted-foreground">
+        <span className="font-mono text-[12px] text-muted-foreground">
           {type < 0 ? 'fora' : `tipo ${type}`}
         </span>
       </div>

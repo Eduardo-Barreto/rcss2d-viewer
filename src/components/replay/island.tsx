@@ -55,7 +55,7 @@ export function Hint({ label, shortcut, side = 'top', children }: HintProps) {
       <TooltipContent className="text-xs font-medium" side={side} sideOffset={8}>
         {label}
         {shortcut === undefined ? null : (
-          <kbd className="ml-3 font-mono text-[11px] text-background/70">{shortcut}</kbd>
+          <kbd className="ml-3 font-mono text-[12px] text-background/70">{shortcut}</kbd>
         )}
       </TooltipContent>
     </Tooltip>
