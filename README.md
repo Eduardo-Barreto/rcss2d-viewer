@@ -5,6 +5,9 @@ Replay e análise de partidas da RoboCup Soccer Simulation 2D a partir de um `.r
 ## Usar
 
 - Solte o log na página ou clique em "Escolher arquivo". Também abre por endereço `https`, no campo da tela inicial ou com `?url=https://…/partida.rcg.gz` (a origem precisa liberar CORS).
+- Ao vivo: com um rcssserver rodando, `just relay` sobe a ponte local (`--help` mostra as opções). Na tela inicial, "Conectar" usa `ws://127.0.0.1:6100`; `?live=ws://127.0.0.1:6100` faz o mesmo pelo endereço. "Começar partida" dá a saída de bola. Quando a conexão cai, os quadros ficam e "Salvar .rcg" baixa o jogo.
+- No Chrome, aceite o pedido de acesso à rede local na barra de endereço. Firefox funciona sem pedido. Safari não deixa uma página `https` abrir `ws://` e não funciona ao vivo.
+- Com o servidor em Docker, a ponte precisa estar na mesma rede do container: publicar a porta 6000 não basta, porque o servidor responde ao monitor de outra porta. `just live-smoke` mostra o jeito.
 - `#t=1234` no endereço pula para o ciclo 1234. Ao pausar, o endereço passa a apontar para o ciclo atual.
 - `?` mostra os atalhos. Os principais: espaço toca e pausa, setas andam um ciclo (com Shift, 10 s), `E` e `Shift E` pulam entre lances, `G` vai para o próximo gol, `F` segue a bola, `I` abre o painel.
 - Camadas: rastros (`T`), campo de visão (`V`), linha de impedimento (`O`), mapa de calor (`H`) da bola, de um time ou do jogador escolhido, e fôlego (`S`).
@@ -16,6 +19,8 @@ Replay e análise de partidas da RoboCup Soccer Simulation 2D a partir de um `.r
 just install
 just dev        # Vite via portless em rcss2d-viewer.localhost
 just ci         # verify (lint, format, tipos, knip, testes, build), policy e e2e
+just relay      # ponte do monitor do rcssserver para o modo ao vivo
+just live-smoke # partida ao vivo contra um rcssserver em container, com Playwright
 just preview    # build servido pelo wrangler com a CSP de produção
 ```
 

@@ -4,7 +4,7 @@ Regras para quem muda o viewer, seja pessoa ou ferramenta automática. O uso est
 
 ## O que é
 
-Replay e análise de partidas da RoboCup Soccer Simulation 2D a partir de um `.rcg` (ou `.rcg.gz`). Roda inteiro no navegador: o arquivo nunca sai da máquina de quem abre. Não existe backend e não deve passar a existir sem um ADR.
+Replay e análise de partidas da RoboCup Soccer Simulation 2D a partir de um `.rcg` (ou `.rcg.gz`). Roda inteiro no navegador: o arquivo nunca sai da máquina de quem abre. Não existe backend e não deve passar a existir sem um ADR. A ponte do modo ao vivo (`relay/`) roda na máquina de quem assiste, não é backend ([ADR 0004](docs/adr/0004-ao-vivo.md)).
 
 O viewer só lê logs. O simulador oficial (rcssserver) continua sendo o motor; nada aqui recalcula física para "corrigir" o log.
 
@@ -19,7 +19,8 @@ O `.rcg` vem de fora, então é dado não confiável.
 - Nada do log vira HTML, URL, estilo ou código. Texto do log só aparece como texto do React ou desenhado no canvas.
 - O parser tem limites explícitos (tamanho descomprimido, tamanho de linha, número de quadros) e recusa o que passa deles com mensagem clara, sem travar a aba.
 - A descompressão conta bytes enquanto lê e para no limite, para uma bomba de gzip não estourar a memória.
-- A CSP fica em `public/_headers`. Afrouxar a CSP pede ADR.
+- A CSP fica em `public/_headers`. Afrouxar a CSP pede ADR. O `ws://` de loopback entrou pelo ADR 0004.
+- A ponte só escuta em loopback, confere o `Origin` e só repassa `(dispstart)` e `(dispbye)`. Comando novo para o servidor pede ADR.
 
 ## Comandos
 
@@ -33,6 +34,7 @@ Bun, Vite, React 19, TanStack Router (rotas em arquivo em `src/routes`, `routeTr
 
 Camadas, de baixo para cima, cada uma só importa as de baixo:
 
+- `relay/`: a ponte do modo ao vivo, Bun fora do navegador. Não importa `src/`.
 - `src/rcg/`: o parser. Puro, sem React e sem DOM.
 - `src/analysis/`: eventos, posse, passes, chutes, estatísticas e séries derivadas do `Match`. Puro.
 - `src/render/`: desenho do campo no canvas e a câmera. Sem React.

@@ -1,6 +1,6 @@
 # Arquitetura
 
-O viewer é um site estático. Quem abre escolhe um `.rcg`, o navegador lê, analisa e desenha. Não tem servidor nosso no caminho: o Cloudflare Pages só entrega HTML, JS e CSS. O porquê está no [ADR 0001](adr/0001-so-navegador.md).
+O viewer é um site estático. Quem abre escolhe um `.rcg`, o navegador lê, analisa e desenha. Não tem servidor nosso no caminho: o Cloudflare Pages só entrega HTML, JS e CSS. O porquê está no [ADR 0001](adr/0001-so-navegador.md). Para ver uma partida enquanto ela roda, uma ponte local (`relay/`) traduz o monitor UDP do rcssserver para WebSocket; ver [Caminho ao vivo](#caminho-ao-vivo) e o [ADR 0004](adr/0004-ao-vivo.md).
 
 ## Caminho de um log
 
@@ -13,6 +13,16 @@ O viewer é um site estático. Quem abre escolhe um `.rcg`, o navegador lê, ana
 7. **Desenho** (`src/render/`). Canvas 2D, redesenhado a cada quadro de animação enquanto toca. A câmera converte metros em pixels. O campo e as camadas são desenhados em metros; números e anéis em pixels, para ficarem legíveis em qualquer zoom. Ver o [ADR 0003](adr/0003-canvas-2d.md).
 8. **Interface** (`src/components/replay/`). Ilhas flutuantes sobre o campo, no jeito do maze-studio: placar, camadas, transporte com linha do tempo, zoom e o painel com Números, Lances, Jogador, Mensagens e Servidor.
 
+## Caminho ao vivo
+
+1. **Ponte** (`relay/`, `just relay`). Processo Bun na máquina de quem assiste. Faz `(dispinit version 5)` no rcssserver (padrão `127.0.0.1:6000`) e repassa cada datagrama, sem o `\0` final, como texto num WebSocket em `127.0.0.1:6100`. Uma sessão de monitor serve todas as abas; aba que chega tarde recebe parâmetros, logos e o último quadro. Da página para o servidor só passam `(dispstart)` e `(dispbye)`, inteiros e com limite de frequência, e `(dispstart)` só com o jogo esperando a saída. O `Origin` do handshake precisa ser o viewer, uma prévia do Pages ou um servidor de dev local. Status sai em JSON, uma linha por evento.
+2. **Origem** (`src/rcg/source.ts`). Endereço `ws://` de loopback ou `wss://`, no campo "Ao vivo" da tela inicial ou com `?live=`.
+3. **Worker** (`live.ts`, `live-session.ts`, `live-match.ts`). O mesmo worker e o mesmo parser do arquivo, em modo incremental: a cada 100 ms os quadros novos vão ao thread principal por transferência, e as colunas crescem dobrando até o limite de 40 mil quadros.
+4. **Estado** (`src/player/live-actions.ts`). O quadro segue a ponta enquanto ninguém volta na linha do tempo. A análise roda de novo no máximo a cada 1,5 s. Quando a ponte ou o servidor caem, a store guarda o motivo e os quadros ficam.
+5. **Interface** (`live-controls.tsx`). Selo "Ao vivo" na ponta, "Voltar ao vivo" depois de voltar, "Começar partida" quando o servidor espera a saída, e o aviso de desconexão com "Salvar .rcg". O arquivo salvo é um `.rcg.gz` v6 (`monitor-file.ts`): o `(pm)` e o `(tm)` que o monitor põe dentro do `show` viram linhas `(playmode)` e `(team)`, como o logger do servidor escreve.
+
+Navegador: Chrome pede permissão de rede local para a página `https` falar com `127.0.0.1`; Firefox não pede; Safari bloqueia. Detalhes e medições no ADR 0004.
+
 ## Camadas
 
 Cada camada importa só as de baixo:
@@ -21,7 +31,7 @@ Cada camada importa só as de baixo:
 rcg → analysis → render → player → components, routes
 ```
 
-`rcg`, `analysis` e `render` não importam React nem DOM (o `render` recebe o contexto do canvas pronto). Isso deixa o grosso do código testável com `bun test`, sem navegador.
+`relay/` roda fora do navegador e não importa nada de `src/`. `rcg`, `analysis` e `render` não importam React nem DOM (o `render` recebe o contexto do canvas pronto). Isso deixa o grosso do código testável com `bun test`, sem navegador.
 
 ## De onde vêm os números
 
@@ -37,9 +47,10 @@ rcg → analysis → render → player → components, routes
 ## Endereços
 
 - `?url=https://…/partida.rcg.gz` abre o log ao entrar.
+- `?live=ws://127.0.0.1:6100` conecta na ponte ao entrar. Só aceita `ws://` em `127.0.0.1` ou `localhost`, ou `wss://`.
 - `#t=1234` pula para o ciclo 1234 depois de ler. Ao pausar, o viewer escreve o ciclo atual no `#t=`, então copiar o endereço compartilha o lance.
 - O `#t=` da chegada vale só para o primeiro log. Cada log aberto depois reescreve o endereço inteiro: `?url=` só quando veio da rede, sem `#t=`. Voltar para a tela inicial limpa os dois.
 
 ## Segurança
 
-O `.rcg` é dado de fora. Nada do log vira HTML, URL, estilo ou código: nomes de time, mensagens e parâmetros aparecem como texto do React ou desenhados no canvas, e os logos de time (XPM dentro do log) são decodificados para pixels com limites de tamanho e cor. A CSP de `public/_headers` só deixa rodar script do próprio site e só deixa conectar em `https:`. O tema guardado é aplicado por `public/theme.js`, carregado no `<head>`, porque a CSP barra o script inline do next-themes. `just headers` confere o que está no ar.
+O `.rcg` é dado de fora. Nada do log vira HTML, URL, estilo ou código: nomes de time, mensagens e parâmetros aparecem como texto do React ou desenhados no canvas, e os logos de time (XPM dentro do log) são decodificados para pixels com limites de tamanho e cor. A CSP de `public/_headers` só deixa rodar script do próprio site e só deixa conectar em `https:`, `wss:` e `ws://` de loopback (`connect-src 'self' https: wss: ws://127.0.0.1:* ws://localhost:*`). Ela não tem `upgrade-insecure-requests`, que trocaria o `ws://` da ponte por `wss://`. Ao vivo, o que vem da ponte é tão não confiável quanto um arquivo e passa pelo mesmo parser e pelos mesmos limites. O tema guardado é aplicado por `public/theme.js`, carregado no `<head>`, porque a CSP barra o script inline do next-themes. `just headers` confere o que está no ar.
