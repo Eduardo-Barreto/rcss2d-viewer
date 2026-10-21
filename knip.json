@@ -6,7 +6,8 @@
   "ignoreDependencies": [
     "tailwindcss",
     "tw-animate-css",
-    "@fontsource-variable/inter",
+    "@fontsource-variable/geist",
+    "@fontsource-variable/geist-mono",
     "shadcn",
     "react-hook-form",
     "@hookform/resolvers"
