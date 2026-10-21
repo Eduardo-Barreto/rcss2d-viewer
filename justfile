@@ -81,7 +81,7 @@ verify:
 e2e *args:
     bunx playwright test "$@"
 
-# Cut cycles from..to out of a text .rcg into a gzipped clip (how the landing clip was made, ADR 0004)
+# Cut cycles from..to out of a text .rcg into a gzipped clip (how the landing clip was made, ADR 0005)
 [group('dev')]
 clip-rcg input from to output:
     bun scripts/clip-rcg.ts "$@"
