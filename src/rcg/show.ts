@@ -12,7 +12,7 @@ const CHAR_DOT = 46
 const SNIPPET_LENGTH = 8
 
 /** Slot index of a player: left 0..10, right 11..21. */
-export function slotOf(side: string, unum: number): number {
+function slotOf(side: string, unum: number): number {
   return (side === 'l' ? 0 : PLAYERS_PER_SIDE) + unum - 1
 }
 

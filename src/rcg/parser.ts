@@ -43,7 +43,7 @@ const HEADER = /^ULG(?<version>\d+)\s*$/
  * Reads the header line. The text versions are 4 to 6, written by
  * `InitSenderLoggerV4..V6` (rcssserver `src/initsenderlogger.cpp:384,471,511`).
  */
-export function readHeader(line: string): number {
+function readHeader(line: string): number {
   const version = Number(HEADER.exec(line)?.groups?.version)
   if (!Number.isInteger(version)) {
     throw new RcgError('Não parece um .rcg: a primeira linha deveria ser ULG4, ULG5 ou ULG6.')

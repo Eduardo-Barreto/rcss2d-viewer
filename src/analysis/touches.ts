@@ -13,7 +13,7 @@ export interface Touch {
 }
 
 /** How a kick ended: at a teammate, at an opponent, with the play stopped, or kept. */
-export type PassOutcome = 'complete' | 'lost' | 'stopped' | 'kept'
+type PassOutcome = 'complete' | 'lost' | 'stopped' | 'kept'
 
 /** A kick and who touched the ball next. */
 export interface Pass {
@@ -85,12 +85,7 @@ export function passesOf(match: Match, touches: Touch[]): Pass[] {
  * at speed `v` covers at most `v / (1 - d)` (rcssserver `MPObject::_inc`, `src/object.cpp:623`, applies `ball_decay` each
  * cycle), so a kick too weak to arrive returns `null`.
  */
-export function crossingY(
-  match: Match,
-  frame: number,
-  side: Side,
-  physics: Physics,
-): number | null {
+function crossingY(match: Match, frame: number, side: Side, physics: Physics): number | null {
   const at = frame * BALL_STRIDE
   const { ball } = match.frames
   const [x = 0, y = 0, vx = 0, vy = 0] = ball.subarray(at, at + BALL_STRIDE)

@@ -30,7 +30,7 @@ const DEFAULT_STEP_MS = 100
 const MS_PER_SECOND = 1000
 
 /** A numeric parameter, or `fallback` when it is missing or not a number. */
-export function numberParam(params: ParamMap | undefined, name: string, fallback: number): number {
+function numberParam(params: ParamMap | undefined, name: string, fallback: number): number {
   const value = params?.get(name)
   return typeof value === 'number' ? value : fallback
 }

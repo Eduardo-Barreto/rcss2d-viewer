@@ -124,7 +124,7 @@ export interface FrameColumns {
 }
 
 /** A value from a `(name value)` parameter pair. */
-export type ParamValue = number | string
+type ParamValue = number | string
 
 /** A parameter block. A `Map` so names read from the log never touch an object prototype. */
 export type ParamMap = Map<string, ParamValue>

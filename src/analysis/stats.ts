@@ -60,7 +60,7 @@ const TALLY_FIELDS: readonly (keyof Tally)[] = [
 ]
 
 /** A tally with every field at zero. */
-export function emptyTally(): Tally {
+function emptyTally(): Tally {
   return {
     kicks: 0,
     passes: 0,

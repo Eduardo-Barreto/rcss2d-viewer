@@ -57,9 +57,6 @@ export const PLAYMODES = [
   'illegal_defense_r',
 ] as const
 
-/** A play mode name as the server writes it. */
-export type PlayModeName = (typeof PLAYMODES)[number]
-
 const PLAYMODE_INDEX = new Map<string, number>(PLAYMODES.map((name, index) => [name, index]))
 
 /** Id of the `play_on` mode, the only one where the ball is live. */

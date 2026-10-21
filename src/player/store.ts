@@ -21,13 +21,13 @@ export const SPEEDS: readonly number[] = Array.from(
 export type HeatSubject = 'ball' | 'l' | 'r' | 'selected'
 
 /** What the camera keeps in the middle. */
-export type Follow = 'off' | 'ball' | 'selected'
+type Follow = 'off' | 'ball' | 'selected'
 
 /** Tabs of the side panel. */
 export type PanelTab = 'stats' | 'events' | 'player' | 'messages' | 'params'
 
 /** Where the log is in its life. */
-export type LoadStatus = 'empty' | 'loading' | 'ready' | 'error'
+type LoadStatus = 'empty' | 'loading' | 'ready' | 'error'
 
 /** The replay: the loaded match, the playhead and every view choice. */
 export interface ReplayState {
