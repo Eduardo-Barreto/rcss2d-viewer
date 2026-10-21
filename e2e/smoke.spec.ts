@@ -20,7 +20,26 @@ test.describe('Replay', () => {
     await page.goto('/')
     await page.getByLabel('Endereço https de um .rcg').fill('http://example.com/a.rcg')
     await page.getByRole('button', { name: 'Abrir' }).click()
-    await expect(page.getByRole('alert')).toContainText('https')
+    const alert = page.getByRole('alert')
+    await expect(alert).toContainText('https')
+    const field = page.getByLabel('Endereço https de um .rcg')
+    await expect(field).toHaveAttribute('aria-invalid', 'true')
+    await expect(field).toHaveAccessibleDescription(/https/)
+
+    await field.press('End')
+    await field.pressSequentially('z')
+    await expect(alert).toHaveCount(0)
+    await expect(field).toHaveAttribute('aria-invalid', 'false')
+  })
+
+  test('explica quando o arquivo não é um replay', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('Arquivo .rcg').setInputFiles({
+      name: 'notas.rcg',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('isto não é um log\n'),
+    })
+    await expect(page.getByRole('alert')).toContainText('não parece um replay')
   })
 
   test('lê o log, reproduz e anda pelos quadros', async ({ page }) => {

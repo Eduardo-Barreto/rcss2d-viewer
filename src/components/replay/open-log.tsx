@@ -32,7 +32,7 @@ function Progress() {
         max={1}
         value={share ?? undefined}
       />
-      <p className="font-mono text-[11px] text-muted-foreground tabular-nums">
+      <p className="font-mono text-[12px] text-muted-foreground tabular-nums">
         {size(loaded)}
         {total === null ? '' : ` de ${size(total)}`}
       </p>
@@ -40,13 +40,35 @@ function Progress() {
   )
 }
 
-function UrlForm() {
+interface Address {
+  url: string
+  /** True from submitting until the next edit, so a failed read can point at the field. */
+  sent: boolean
+}
+
+const BLANK: Address = { url: '', sent: false }
+
+/** Props of {@link UrlForm}. */
+interface UrlFormProps {
+  errorId: string
+  /** Kept by the parent, since the form unmounts while the log is read. */
+  address: Address
+  onAddress: (address: Address) => void
+}
+
+/** The address field, marked invalid when the read it started failed. */
+function UrlForm({ errorId, address, onAddress }: UrlFormProps) {
   const open = useReplay((s) => s.open)
-  const [url, setUrl] = useState('')
+  const failed = useReplay((s) => s.status === 'error')
+  const clearError = useReplay((s) => s.clearError)
+  const { url, sent } = address
   const id = useId()
+  const invalid = sent && failed
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    if (url.trim() !== '') void open({ kind: 'url', url: url.trim() })
+    if (url.trim() === '') return
+    onAddress({ url, sent: true })
+    void open({ kind: 'url', url: url.trim() })
   }
   return (
     <form className="flex w-full gap-1.5" onSubmit={submit}>
@@ -54,17 +76,22 @@ function UrlForm() {
         Endereço https de um .rcg
       </label>
       <Input
+        aria-describedby={invalid ? errorId : undefined}
+        aria-invalid={invalid}
         autoComplete="off"
-        className="h-9 flex-1 rounded-[10px] text-[13px]"
+        className="h-10 flex-1 rounded-[10px] text-base md:text-[13px]"
         id={id}
         inputMode="url"
-        onChange={(event) => setUrl(event.target.value)}
+        onChange={(event) => {
+          onAddress({ url: event.target.value, sent: false })
+          clearError()
+        }}
         placeholder="https://…/partida.rcg.gz"
         spellCheck={false}
         type="url"
         value={url}
       />
-      <IslandButton disabled={url.trim() === ''} type="submit" variant="secondary">
+      <IslandButton className="h-10" disabled={url.trim() === ''} type="submit" variant="secondary">
         <Link2 aria-hidden className="size-4" />
         Abrir
       </IslandButton>
@@ -84,6 +111,8 @@ export function OpenLog({ dragging }: OpenLogProps) {
   const error = useReplay((s) => s.error)
   const open = useReplay((s) => s.open)
   const input = useRef<HTMLInputElement>(null)
+  const errorId = useId()
+  const [address, setAddress] = useState(BLANK)
 
   const pick = (files: FileList | null) => {
     const file = files?.[0]
@@ -94,12 +123,12 @@ export function OpenLog({ dragging }: OpenLogProps) {
     <main className="fixed inset-0 grid place-items-center bg-background p-4">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-3 rounded-[22px] border-2 border-dashed border-foreground/15 opacity-0 transition-opacity duration-150 ease-(--ease) data-on:opacity-100"
+        className="pointer-events-none absolute inset-3 rounded-[22px] border-2 border-dashed border-foreground/40 opacity-0 transition-opacity duration-150 ease-(--ease) data-on:opacity-100"
         data-on={dragging ? '' : undefined}
       />
       <Island className="w-[min(420px,calc(100vw-32px))] flex-col items-start gap-4 rounded-[18px] p-5">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[15px] leading-5 font-semibold">rcssviewer</h1>
+          <h1 className="text-[20px] leading-7 font-semibold tracking-[-0.01em]">rcssviewer</h1>
           <p className="text-[13px] text-pretty text-muted-foreground">
             Replay e análise de partidas da Soccer Simulation 2D. Solte um <code>.rcg</code> ou{' '}
             <code>.rcg.gz</code> aqui.
@@ -126,12 +155,13 @@ export function OpenLog({ dragging }: OpenLogProps) {
               tabIndex={-1}
               type="file"
             />
-            <UrlForm />
+            <UrlForm address={address} errorId={errorId} onAddress={setAddress} />
           </>
         )}
         {status === 'error' && error !== null ? (
           <p
             className="flex w-full items-start gap-2 rounded-[10px] bg-destructive/10 px-3 py-2 text-[13px] text-destructive"
+            id={errorId}
             role="alert"
           >
             <TriangleAlert aria-hidden className="mt-0.5 size-4 flex-none" />

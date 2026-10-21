@@ -53,6 +53,8 @@ export interface ReplayState {
   open: (source: LogSource) => Promise<void>
   show: (match: Match, name: string, url?: string | null) => void
   close: () => void
+  /** Drops a failed read's message, back to the empty open screen. */
+  clearError: () => void
   seek: (frame: number) => void
   step: (frames: number) => void
   advance: (ms: number) => void
@@ -141,6 +143,10 @@ export const useReplay = create<ReplayState>()(
 
       show(match, name, url = null) {
         set({ ...EMPTY, status: 'ready', name, url, match, analysis: analyzeMatch(match) })
+      },
+
+      clearError() {
+        if (get().status === 'error') set({ status: 'empty', error: null })
       },
 
       close() {

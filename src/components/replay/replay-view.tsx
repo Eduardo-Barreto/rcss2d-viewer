@@ -223,8 +223,12 @@ export function ReplayView() {
       {status === 'ready' && dragging ? (
         <div
           aria-hidden
-          className="pointer-events-none fixed inset-3 z-30 rounded-[22px] border-2 border-dashed border-foreground/30 bg-background/40"
-        />
+          className="pointer-events-none fixed inset-3 z-30 grid place-items-center rounded-[22px] border-2 border-dashed border-foreground/40 bg-background/60"
+        >
+          <p className="rounded-[10px] bg-card px-3 py-2 text-[13px] font-medium shadow-island">
+            Solte para abrir outra partida
+          </p>
+        </div>
       ) : null}
     </TooltipProvider>
   )

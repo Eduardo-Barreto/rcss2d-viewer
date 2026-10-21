@@ -96,4 +96,13 @@ describe('replay store', () => {
     replay().close()
     expect(replay()).toMatchObject({ status: 'empty', match: null, frame: 0 })
   })
+
+  test('clearing an error only leaves a failed read', async () => {
+    replay().clearError()
+    expect(replay().status).toBe('ready')
+    await replay().open({ kind: 'url', url: 'http://example.com/a.rcg' })
+    expect(replay()).toMatchObject({ status: 'error', error: 'Só aceito endereços https.' })
+    replay().clearError()
+    expect(replay()).toMatchObject({ status: 'empty', error: null })
+  })
 })

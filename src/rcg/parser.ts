@@ -50,7 +50,9 @@ const HEADER = /^ULG(?<version>\d+)\s*$/
 function readHeader(line: string): number {
   const version = Number(HEADER.exec(line)?.groups?.version)
   if (!Number.isInteger(version)) {
-    throw new RcgError('Não parece um .rcg: a primeira linha deveria ser ULG4, ULG5 ou ULG6.')
+    throw new RcgError(
+      'Esse arquivo não parece um replay. Escolha um .rcg ou .rcg.gz gravado pelo rcssserver.',
+    )
   }
   if (version < FIRST_TEXT_VERSION || version > LAST_TEXT_VERSION) {
     throw new RcgError(`Versão ${version} do .rcg não é suportada. Use a 4, 5 ou 6.`)
