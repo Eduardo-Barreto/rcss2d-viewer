@@ -48,6 +48,13 @@ interface Paint {
   heatmap: Heatmap | null
 }
 
+/**
+ * Player radius floor on the landing figures. They fit the whole pitch in 350 to 670 px, about
+ * 3 to 6 px per meter, so the app's 9 px floor drew each player 1.6 to 3 m in radius. 7 px is the
+ * smallest that keeps the shirt number legible, and puts the hero (5 px per meter) near
+ * rcssmonitor's default, which draws a player at its kickable radius of about 1.1 m.
+ */
+const LANDING_PLAYER_PX = 7
 const NO_INSETS = { top: 0, right: 0, bottom: 0, left: 0 }
 
 function measure(element: HTMLCanvasElement): Size {
@@ -87,6 +94,7 @@ function paint(element: HTMLCanvasElement, size: Size, palette: Palette, state: 
     selected: -1,
     hovered: -1,
     heatmap: state.heatmap,
+    minPlayerPx: LANDING_PLAYER_PX,
   })
 }
 

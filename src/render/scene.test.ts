@@ -89,7 +89,34 @@ function recorder() {
   return { ctx: ctx as CanvasRenderingContext2D, calls }
 }
 
+function arcRadii(input: SceneInput): number[] {
+  const radii: number[] = []
+  const ctx = new Proxy(
+    {},
+    {
+      get:
+        (_, name: string) =>
+        (...args: number[]) => {
+          if (name === 'arc') radii.push(args[2] ?? 0)
+        },
+      set: () => true,
+    },
+  )
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the recorder answers every method
+  drawScene(ctx as CanvasRenderingContext2D, input)
+  return radii
+}
+
 describe('scene', () => {
+  test('draws players at a smaller floor when a small figure asks for one', () => {
+    const small: Viewport = { width: 588, height: 399, insets: VIEWPORT.insets }
+    const base = { ...sceneInput(), camera: fitCamera(small), viewport: small, selected: -1 }
+    const plain = { ...base, overlays: { ...OVERLAYS, cones: false, trails: false } }
+    const discs = (radii: number[], r: number) => radii.filter((radius) => radius === r).length
+    expect(discs(arcRadii(plain), 9)).toBe(3)
+    expect(discs(arcRadii({ ...plain, minPlayerPx: 7 }), 7)).toBe(3)
+  })
+
   test('paints every layer without throwing', () => {
     const { ctx, calls } = recorder()
     drawScene(ctx, sceneInput())
