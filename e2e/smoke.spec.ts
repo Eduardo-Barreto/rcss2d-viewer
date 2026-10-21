@@ -9,6 +9,13 @@ test.describe('Replay', () => {
     await expect(page.getByRole('button', { name: 'Escolher arquivo' })).toBeVisible()
   })
 
+  test('aplica o tema guardado antes do app carregar', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('theme', 'dark'))
+    await page.route('**/src/main.tsx', (route) => route.abort())
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  })
+
   test('recusa endereço que não é https', async ({ page }) => {
     await page.goto('/')
     await page.getByLabel('Endereço https de um .rcg').fill('http://example.com/a.rcg')

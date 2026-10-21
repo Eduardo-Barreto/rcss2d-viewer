@@ -85,4 +85,4 @@ deploy-status:
 # Print the response headers the site serves, to check the CSP after a deploy
 [group('deploy')]
 headers url=site:
-    curl -sI "$1" | grep -iE '^(content-security-policy|x-content-type-options|referrer-policy|cross-origin-opener-policy|permissions-policy):'
+    curl -sI "$1" | grep -iE '^(content-security-policy|strict-transport-security|x-content-type-options|referrer-policy|cross-origin-opener-policy|permissions-policy):'
