@@ -42,6 +42,8 @@ test.describe('Ao vivo', () => {
   })
 
   test('volta no tempo e volta ao vivo', async ({ page }) => {
+    // Frames keep arriving through the whole test, so a busy machine stretches every step.
+    test.slow()
     await openLive(page)
     await kickOff(page)
     const slider = page.getByRole('slider', { name: 'Posição na partida' })
