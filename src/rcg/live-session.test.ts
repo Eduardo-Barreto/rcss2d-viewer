@@ -7,8 +7,13 @@ import { asMonitorLines } from '@/test/monitor-lines'
 import { showLine } from '@/test/rcg-builder'
 
 import { LiveMatch } from './live-match'
-import { type LiveSession as Session, LiveSession, type LiveSocket } from './live-session'
-import { DEFAULT_LIMITS, parseRcgText } from './parser'
+import {
+  LIVE_LIMITS,
+  type LiveSession as Session,
+  LiveSession,
+  type LiveSocket,
+} from './live-session'
+import { DEFAULT_LIMITS, type RcgLimits, parseRcgText } from './parser'
 import type { LiveReply } from './protocol'
 
 const FIXTURE = join(import.meta.dir, 'fixtures', 'rcss2d-mirror-300.rcg.gz')
@@ -49,7 +54,7 @@ afterEach(() => {
   for (const session of sessions.splice(0)) session.stop()
 })
 
-function start(maxFrames = DEFAULT_LIMITS.maxFrames) {
+function start(maxFrames = DEFAULT_LIMITS.maxFrames, limits: Partial<RcgLimits> = {}) {
   const socket = new FakeSocket()
   const replies: LiveReply[] = []
   const transfers: Transferable[][] = []
@@ -59,7 +64,7 @@ function start(maxFrames = DEFAULT_LIMITS.maxFrames) {
       replies.push(reply)
       transfers.push(transfer)
     },
-    { open: () => socket, limits: { ...DEFAULT_LIMITS, maxFrames }, flushMs: 60_000 },
+    { open: () => socket, limits: { ...LIVE_LIMITS, maxFrames, ...limits }, flushMs: 60_000 },
   )
   sessions.push(session)
   return { socket, replies, transfers, session }
@@ -104,6 +109,24 @@ describe('LiveSession', () => {
     expect(saved.playmodes).toEqual(original.playmodes)
     expect(saved.scores).toEqual(original.scores.slice(0, 1))
     expect(saved.serverParams).toEqual(original.serverParams)
+  })
+
+  test('keeps every show line in the save once the play mode changes pass the event limit', async () => {
+    const { socket, session } = start(DEFAULT_LIMITS.maxFrames, { maxEvents: 1 })
+    socket.open()
+    socket.deliver(UP)
+    for (const line of asMonitorLines(fixtureText)) socket.deliver(line)
+    const file = await session.save()
+    if (file === null) throw new Error('nothing saved')
+    const saved = parseRcgText(
+      gunzipSync(new Uint8Array(await file.arrayBuffer())).toString('utf8'),
+    )
+    expect(saved.frames.count).toBe(parseRcgText(fixtureText).frames.count)
+  })
+
+  test('keeps at most 128 MiB of lines for saving a live match', () => {
+    expect(LIVE_LIMITS.maxBytes).toBe(128 * 1_048_576)
+    expect(LIVE_LIMITS.maxBytes).toBeLessThan(DEFAULT_LIMITS.maxBytes)
   })
 
   test('saves one frame for a wait the parser folded, and nothing before any line', async () => {

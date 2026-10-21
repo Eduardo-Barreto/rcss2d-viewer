@@ -18,9 +18,18 @@ export interface LiveSessionOptions {
 }
 
 const FLUSH_MS = 100
+const MIB = 1_048_576
+const LIVE_MAX_BYTES_MIB = 128
+
+/**
+ * Limits for a live session. The lines are kept as JS strings for saving, so the byte cap is
+ * lower than for a file: a full match with teams is about 22 MB of monitor text.
+ */
+export const LIVE_LIMITS: RcgLimits = { ...DEFAULT_LIMITS, maxBytes: LIVE_MAX_BYTES_MIB * MIB }
+
 const DEFAULT_OPTIONS: LiveSessionOptions = {
   open: (url) => new WebSocket(url),
-  limits: DEFAULT_LIMITS,
+  limits: LIVE_LIMITS,
   flushMs: FLUSH_MS,
 }
 
@@ -151,9 +160,8 @@ export class LiveSession {
       this.end(this.parser.frameCount >= this.limits.maxFrames ? 'full' : 'invalid')
       return
     }
-    if (line !== '' && this.parser.skipped === skipped) {
-      this.record(line, this.parser.frameCount > frames)
-    }
+    const added = this.parser.frameCount > frames
+    if (line !== '' && (added || this.parser.skipped === skipped)) this.record(line, added)
   }
 
   private record(line: string, added: boolean): void {
