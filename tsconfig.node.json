@@ -25,6 +25,7 @@
   "include": [
     "vite.config.ts",
     "playwright.config.ts",
+    "playwright.real.config.ts",
     "scripts/**/*.ts",
     ".oxlint-plugins/**/*.ts",
     "e2e/**/*.ts",
