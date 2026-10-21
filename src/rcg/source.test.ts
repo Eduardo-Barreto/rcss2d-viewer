@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import { RcgError } from './scanner'
-import { checkLogUrl, openSource, sourceName } from './source'
+import { checkLiveUrl, checkLogUrl, openSource, sourceName } from './source'
 
 const realFetch = globalThis.fetch
 
@@ -27,6 +27,32 @@ async function failure(pending: Promise<unknown>): Promise<unknown> {
 
 afterEach(() => {
   globalThis.fetch = realFetch
+})
+
+describe('checkLiveUrl', () => {
+  test.each([
+    'ws://127.0.0.1:6100',
+    'ws://localhost:6100',
+    'ws://[::1]:6100',
+    'wss://relay.example.com/live',
+  ])('accepts %s', (raw) => {
+    expect(checkLiveUrl(raw).href).toStartWith(raw)
+  })
+
+  test.each([
+    'ws://192.168.0.10:6100',
+    'ws://relay.example.com',
+    'ws://127.0.0.1.example.com:6100',
+    'http://127.0.0.1:6100',
+    'https://relay.example.com',
+    'wss://user:pw@relay.example.com',
+    'ws://user@127.0.0.1:6100',
+    'wss://relay.example.com/#x',
+    'javascript:alert(1)',
+    'not a url',
+  ])('refuses %s', (raw) => {
+    expect(() => checkLiveUrl(raw)).toThrow(RcgError)
+  })
 })
 
 describe('checkLogUrl', () => {

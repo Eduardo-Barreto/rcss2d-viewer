@@ -1,16 +1,17 @@
 import { frameBuffers } from './columns'
-import type { LoadReply, LoadRequest } from './protocol'
+import { LiveSession } from './live-session'
+import type { LiveReply, LoadReply, WorkerRequest } from './protocol'
 import { RcgError } from './scanner'
-import { openSource } from './source'
+import { type LogSource, openSource } from './source'
 import { readRcgStream } from './stream'
 
 const PROGRESS_STEP = 262_144
 
-function reply(message: LoadReply, transfer: Transferable[] = []): void {
+function reply(message: LoadReply | LiveReply, transfer: Transferable[] = []): void {
   self.postMessage(message, { transfer })
 }
 
-async function load({ source }: LoadRequest): Promise<void> {
+async function load(source: LogSource): Promise<void> {
   try {
     const { stream, size } = await openSource(source)
     let reported = 0
@@ -26,6 +27,12 @@ async function load({ source }: LoadRequest): Promise<void> {
   }
 }
 
-self.addEventListener('message', (event: MessageEvent<LoadRequest>) => {
-  void load(event.data)
+let live: LiveSession | null = null
+
+self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
+  const request = event.data
+  if (request.kind === 'load') void load(request.source)
+  else if (request.kind === 'live') live = new LiveSession(request.url, reply)
+  else if (request.kind === 'command') live?.command(request.command)
+  else live?.stop()
 })
