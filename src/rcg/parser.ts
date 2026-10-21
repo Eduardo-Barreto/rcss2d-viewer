@@ -1,6 +1,6 @@
 import { FrameStore } from './columns'
 import { type TeamLine, cleanText, messageText, readGraphic, readParams, readTeam } from './lines'
-import { playModeId } from './playmodes'
+import { BEFORE_KICK_OFF, playModeId } from './playmodes'
 import { Char, RcgError, RcgSyntaxError, Scanner } from './scanner'
 import { type ShowExtras, readShowBody } from './show'
 import type {
@@ -51,7 +51,6 @@ const FIRST_TEXT_VERSION = 4
 const LAST_TEXT_VERSION = 6
 /** Log version whose lines match what monitor protocol 5 sends (`src/logger.cpp:166-170`). */
 const MONITOR_LOG_VERSION = 6
-const BEFORE_KICK_OFF = playModeId('before_kick_off')
 const TIME_OVER = playModeId('time_over')
 
 /** Where the lines come from. */

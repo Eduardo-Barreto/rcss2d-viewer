@@ -24,7 +24,8 @@ export function checkLogUrl(raw: string): URL {
   return url
 }
 
-const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]'])
+/** The loopback hosts the CSP lets a page reach over plain `ws`; CSP has no IPv6 literal. */
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost'])
 
 /**
  * Checks a relay address for the live mode. `wss` goes anywhere; plain `ws` only to this

@@ -30,17 +30,16 @@ afterEach(() => {
 })
 
 describe('checkLiveUrl', () => {
-  test.each([
-    'ws://127.0.0.1:6100',
-    'ws://localhost:6100',
-    'ws://[::1]:6100',
-    'wss://relay.example.com/live',
-  ])('accepts %s', (raw) => {
-    expect(checkLiveUrl(raw).href).toStartWith(raw)
-  })
+  test.each(['ws://127.0.0.1:6100', 'ws://localhost:6100', 'wss://relay.example.com/live'])(
+    'accepts %s',
+    (raw) => {
+      expect(checkLiveUrl(raw).href).toStartWith(raw)
+    },
+  )
 
   test.each([
     'ws://192.168.0.10:6100',
+    'ws://[::1]:6100',
     'ws://relay.example.com',
     'ws://127.0.0.1.example.com:6100',
     'http://127.0.0.1:6100',

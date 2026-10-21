@@ -8,6 +8,7 @@ import { useReplay } from '@/player/store'
 
 import { HelpDialog } from './help-dialog'
 import { Layers } from './layers'
+import { LiveNotice } from './live-controls'
 import { OpenLog } from './open-log'
 import { Panel, PanelToggle, SHEET_SHARE } from './panel/panel'
 import { type Insets, PitchView } from './pitch-view'
@@ -197,6 +198,7 @@ function Stage() {
         className="fixed bottom-safe-3 left-safe-3 flex items-end gap-2 motion-safe:transition-[bottom] motion-safe:duration-240 motion-safe:ease-(--ease-drawer)"
         style={layout.row}
       >
+        <LiveNotice className="absolute bottom-full left-0 mb-2 max-w-full" />
         <Transport className="min-w-0 flex-1" moments={moments}>
           {narrow ? <PanelToggle /> : null}
         </Transport>

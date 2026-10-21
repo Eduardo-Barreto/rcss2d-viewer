@@ -15,6 +15,7 @@ import { type Moment, momentJump } from '@/player/moments'
 import { SPEEDS, useReplay } from '@/player/store'
 
 import { Hint, Island, IslandButton, IslandSeparator } from './island'
+import { LiveControls } from './live-controls'
 import { Timeline } from './timeline'
 
 function jump(moments: Moment[], direction: 1 | -1): void {
@@ -126,6 +127,7 @@ export function Transport({ moments, className, children }: TransportProps) {
         </Hint>
         <IslandSeparator />
         <SpeedMenu />
+        <LiveControls />
         <span className="flex-1" />
         <Clock />
         {children}

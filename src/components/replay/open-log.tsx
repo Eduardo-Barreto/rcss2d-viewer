@@ -1,5 +1,5 @@
-import { FileUp, Link2, LoaderCircle, TriangleAlert, X } from 'lucide-react'
-import { type FormEvent, useId, useRef, useState } from 'react'
+import { FileUp, Link2, LoaderCircle, Radio, TriangleAlert, X } from 'lucide-react'
+import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { useReplay } from '@/player/store'
@@ -47,18 +47,24 @@ interface Address {
 }
 
 const BLANK: Address = { url: '', sent: false }
+/** Where `just relay` listens by default. */
+const RELAY: Address = { url: 'ws://127.0.0.1:6100', sent: false }
 
-/** Props of {@link UrlForm}. */
-interface UrlFormProps {
+/** Props of {@link AddressForm}. */
+interface AddressFormProps {
   errorId: string
   /** Kept by the parent, since the form unmounts while the log is read. */
   address: Address
   onAddress: (address: Address) => void
+  onSubmit: (url: string) => void
+  label: string
+  placeholder: string
+  action: ReactNode
 }
 
-/** The address field, marked invalid when the read it started failed. */
-function UrlForm({ errorId, address, onAddress }: UrlFormProps) {
-  const open = useReplay((s) => s.open)
+/** An address field and its button, marked invalid when what it started failed. */
+function AddressForm(props: AddressFormProps) {
+  const { errorId, address, onAddress, onSubmit, label, placeholder, action } = props
   const failed = useReplay((s) => s.status === 'error')
   const clearError = useReplay((s) => s.clearError)
   const { url, sent } = address
@@ -68,12 +74,12 @@ function UrlForm({ errorId, address, onAddress }: UrlFormProps) {
     event.preventDefault()
     if (url.trim() === '') return
     onAddress({ url, sent: true })
-    void open({ kind: 'url', url: url.trim() })
+    onSubmit(url.trim())
   }
   return (
     <form className="flex w-full gap-1.5" onSubmit={submit}>
       <label className="sr-only" htmlFor={id}>
-        Endereço https de um .rcg
+        {label}
       </label>
       <Input
         aria-describedby={invalid ? errorId : undefined}
@@ -86,16 +92,50 @@ function UrlForm({ errorId, address, onAddress }: UrlFormProps) {
           onAddress({ url: event.target.value, sent: false })
           clearError()
         }}
-        placeholder="https://…/partida.rcg.gz"
+        placeholder={placeholder}
         spellCheck={false}
         type="url"
         value={url}
       />
       <IslandButton className="h-10" disabled={url.trim() === ''} type="submit" variant="secondary">
-        <Link2 aria-hidden className="size-4" />
-        Abrir
+        {action}
       </IslandButton>
     </form>
+  )
+}
+
+/** After this long without a frame, the connecting screen says what usually holds it up. */
+const SLOW_CONNECT_MS = 5000
+
+/** Waiting for the relay and then for the first frame, with a hint when it takes long. */
+function Connecting() {
+  const url = useReplay((s) => s.live?.url ?? '')
+  const relayUp = useReplay((s) => s.live?.phase === 'open')
+  const close = useReplay((s) => s.close)
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), SLOW_CONNECT_MS)
+    return () => clearTimeout(timer)
+  }, [])
+  return (
+    <div className="flex w-full flex-col gap-2" aria-live="polite">
+      <div className="flex items-center gap-2">
+        <LoaderCircle aria-hidden className="size-4 animate-spin text-muted-foreground" />
+        <p className="min-w-0 flex-1 truncate text-[13px] font-medium">
+          {relayUp ? 'Esperando o primeiro quadro' : `Conectando a ${url}`}
+        </p>
+        <IslandButton aria-label="Cancelar conexão" onClick={close}>
+          <X aria-hidden className="size-4" />
+        </IslandButton>
+      </div>
+      {slow ? (
+        <p className="text-[12px] text-pretty text-muted-foreground">
+          {relayUp
+            ? 'A ponte está de pé, mas o rcssserver ainda não mandou nada. Ele está rodando na porta que a ponte usa?'
+            : 'Confira se a ponte está rodando (just relay). O Chrome pode pedir permissão para acessar a rede local: aceite no aviso da barra de endereço.'}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
@@ -112,7 +152,11 @@ export function OpenLog({ dragging }: OpenLogProps) {
   const open = useReplay((s) => s.open)
   const input = useRef<HTMLInputElement>(null)
   const errorId = useId()
+  const liveId = useId()
+  const connect = useReplay((s) => s.connect)
+  const connecting = useReplay((s) => s.live !== null)
   const [address, setAddress] = useState(BLANK)
+  const [relay, setRelay] = useState(RELAY)
 
   const pick = (files: FileList | null) => {
     const file = files?.[0]
@@ -134,9 +178,9 @@ export function OpenLog({ dragging }: OpenLogProps) {
             <code>.rcg.gz</code> aqui.
           </p>
         </div>
-        {status === 'loading' ? (
-          <Progress />
-        ) : (
+        {status === 'loading' && connecting ? <Connecting /> : null}
+        {status === 'loading' && !connecting ? <Progress /> : null}
+        {status === 'loading' ? null : (
           <>
             <IslandButton
               className="h-11 w-full justify-center"
@@ -155,7 +199,51 @@ export function OpenLog({ dragging }: OpenLogProps) {
               tabIndex={-1}
               type="file"
             />
-            <UrlForm address={address} errorId={errorId} onAddress={setAddress} />
+            <AddressForm
+              action={
+                <>
+                  <Link2 aria-hidden className="size-4" />
+                  Abrir
+                </>
+              }
+              address={address}
+              errorId={errorId}
+              label="Endereço https de um .rcg"
+              onAddress={(next) => {
+                setAddress(next)
+                if (next.sent) setRelay({ ...relay, sent: false })
+              }}
+              onSubmit={(url) => void open({ kind: 'url', url })}
+              placeholder="https://…/partida.rcg.gz"
+            />
+            <section aria-labelledby={liveId} className="flex w-full flex-col gap-2 border-t pt-4">
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-[13px] font-medium" id={liveId}>
+                  Ao vivo
+                </h2>
+                <p className="text-[12px] text-pretty text-muted-foreground">
+                  Acompanhe um rcssserver da sua máquina. Rode <code>just relay</code> no viewer e
+                  conecte na ponte.
+                </p>
+              </div>
+              <AddressForm
+                action={
+                  <>
+                    <Radio aria-hidden className="size-4" />
+                    Conectar
+                  </>
+                }
+                address={relay}
+                errorId={errorId}
+                label="Endereço ws:// da ponte"
+                onAddress={(next) => {
+                  setRelay(next)
+                  if (next.sent) setAddress({ ...address, sent: false })
+                }}
+                onSubmit={(url) => connect(url)}
+                placeholder="ws://127.0.0.1:6100"
+              />
+            </section>
           </>
         )}
         {status === 'error' && error !== null ? (
@@ -169,7 +257,7 @@ export function OpenLog({ dragging }: OpenLogProps) {
           </p>
         ) : null}
         <p className="text-[12px] text-pretty text-muted-foreground">
-          O arquivo é lido só no seu navegador. Nada é enviado.
+          O arquivo e a partida ao vivo ficam só no seu navegador. Nada é enviado.
         </p>
       </Island>
     </main>

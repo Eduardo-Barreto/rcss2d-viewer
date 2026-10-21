@@ -62,6 +62,9 @@ const PLAYMODE_INDEX = new Map<string, number>(PLAYMODES.map((name, index) => [n
 /** Id of the `play_on` mode, the only one where the ball is live. */
 export const PLAY_ON = PLAYMODE_INDEX.get('play_on') ?? 0
 
+/** Id of `before_kick_off`, while the server waits for a kick-off. */
+export const BEFORE_KICK_OFF = PLAYMODE_INDEX.get('before_kick_off') ?? 1
+
 /** Looks a play mode name up, returning `undefined` for a name the server never writes. */
 export function playModeId(name: string): number | undefined {
   return PLAYMODE_INDEX.get(name)
