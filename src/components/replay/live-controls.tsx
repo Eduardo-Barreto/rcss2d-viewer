@@ -19,7 +19,8 @@ function LiveDot({ className }: { className?: string }) {
 
 /**
  * The live end of the transport: a badge while the playhead sits on the newest frame, a way
- * back to it otherwise, and the kick-off while the server waits for one.
+ * back to it otherwise, and the kick-off while the server waits for one. In a narrow
+ * transport they take a row of their own, since the playback row has no room left on a phone.
  */
 export function LiveControls() {
   const live = useReplay((s) => s.live)
@@ -31,8 +32,8 @@ export function LiveControls() {
   const kickOff = useReplay((s) => s.kickOff)
   if (live === null || live.phase === 'ended') return null
   return (
-    <>
-      <IslandSeparator />
+    <div className="flex items-center gap-0.5 @max-md:order-last @max-md:basis-full @max-md:justify-center">
+      <IslandSeparator className="@max-md:hidden" />
       {live.following ? (
         <p className="flex h-9 items-center gap-1.5 px-2 text-[13px] font-medium phone:h-10">
           <LiveDot />
@@ -52,7 +53,7 @@ export function LiveControls() {
           Começar partida
         </IslandButton>
       ) : null}
-    </>
+    </div>
   )
 }
 

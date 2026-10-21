@@ -90,7 +90,7 @@ export function Transport({ moments, className, children }: TransportProps) {
   return (
     <Island className={cn('@container flex-col items-stretch gap-1 px-3 pt-2 pb-1', className)}>
       <Timeline moments={moments} />
-      <div className="flex items-center gap-0.5">
+      <div className="flex flex-wrap items-center gap-0.5">
         <Hint label="Lance anterior" shortcut="Shift E">
           <IslandButton aria-label="Lance anterior" onClick={() => jump(moments, -1)}>
             <SkipBack aria-hidden className="size-4" />

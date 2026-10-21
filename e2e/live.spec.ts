@@ -76,3 +76,27 @@ test.describe('Ao vivo', () => {
     await expect(page.getByRole('alert')).toContainText('rede local')
   })
 })
+
+test.describe('Ao vivo no celular', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+
+  test('cabe na tela com a partida esperando e depois de voltar no tempo', async ({ page }) => {
+    const width = page.viewportSize()?.width ?? 0
+    const inside = async (name: string) => {
+      const box = await page.getByRole('button', { name }).boundingBox()
+      return box !== null && box.x >= 0 && box.x + box.width <= width
+    }
+    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await expect(page.getByRole('button', { name: 'Começar partida' })).toBeVisible({
+      timeout: START_MS,
+    })
+    expect(await inside('Começar partida')).toBe(true)
+    expect(await inside('Painel da partida')).toBe(true)
+    await kickOff(page)
+    const slider = page.getByRole('slider', { name: 'Posição na partida' })
+    await slider.focus()
+    await slider.press('Home')
+    await expect(page.getByRole('button', { name: 'Voltar ao vivo' })).toBeVisible()
+    expect(await inside('Voltar ao vivo')).toBe(true)
+  })
+})
