@@ -72,7 +72,8 @@ function useFileDrop(): boolean {
 }
 
 /**
- * `?url=` opens a log on arrival and `#t=` seeks once that first log is read. Every log opened
+ * `?url=` opens a log on arrival and `#t=` seeks once that first log is read. `?live=` only
+ * fills in the relay field: a link must not open a connection before the user clicks. Every log opened
  * after it rewrites the whole address, and pausing writes `#t=` back.
  */
 function useDeepLink(): void {
@@ -87,8 +88,8 @@ function useDeepLink(): void {
   useEffect(() => {
     const first = arrival.current
     if (useReplay.getState().status !== 'empty') return
-    if (first.live !== null) useReplay.getState().connect(first.live)
-    else if (first.url !== null) void useReplay.getState().open({ kind: 'url', url: first.url })
+    if (first.live === null && first.url !== null)
+      void useReplay.getState().open({ kind: 'url', url: first.url })
   }, [])
 
   // Keyed on whether a match is open, not on the match: a live one changes ten times a second.
@@ -216,6 +217,7 @@ export function ReplayView() {
   const match = useReplay((s) => s.match)
   const narrow = useNarrow()
   const dragging = useFileDrop()
+  const [linkedRelay] = useState(() => parseDeepLink(window.location.search, '').live)
   useDeepLink()
 
   useEffect(() => {
@@ -224,7 +226,7 @@ export function ReplayView() {
 
   return (
     <TooltipProvider delayDuration={TOOLTIP_DELAY_MS}>
-      {status === 'ready' ? <Stage /> : <OpenLog dragging={dragging} />}
+      {status === 'ready' ? <Stage /> : <OpenLog dragging={dragging} relay={linkedRelay} />}
       {status === 'ready' && dragging ? (
         <div
           aria-hidden

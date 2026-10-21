@@ -50,6 +50,10 @@ const BLANK: Address = { url: '', sent: false }
 /** Where `just relay` listens by default. */
 const RELAY: Address = { url: 'ws://127.0.0.1:6100', sent: false }
 
+function relayField(linked: string | null | undefined): Address {
+  return linked === null || linked === undefined ? RELAY : { url: linked, sent: false }
+}
+
 /** Props of {@link AddressForm}. */
 interface AddressFormProps {
   errorId: string
@@ -143,10 +147,12 @@ function Connecting() {
 export interface OpenLogProps {
   /** True while a file is dragged over the window. */
   dragging: boolean
+  /** Relay address from a `?live=` link, to fill in the field; the default one otherwise. */
+  relay?: string | null
 }
 
 /** The first screen: pick, drop or link a log. Also shows the reading progress and errors. */
-export function OpenLog({ dragging }: OpenLogProps) {
+export function OpenLog({ dragging, relay: linked }: OpenLogProps) {
   const status = useReplay((s) => s.status)
   const error = useReplay((s) => s.error)
   const open = useReplay((s) => s.open)
@@ -156,7 +162,7 @@ export function OpenLog({ dragging }: OpenLogProps) {
   const connect = useReplay((s) => s.connect)
   const connecting = useReplay((s) => s.live !== null)
   const [address, setAddress] = useState(BLANK)
-  const [relay, setRelay] = useState(RELAY)
+  const [relay, setRelay] = useState(() => relayField(linked))
 
   const pick = (files: FileList | null) => {
     const file = files?.[0]

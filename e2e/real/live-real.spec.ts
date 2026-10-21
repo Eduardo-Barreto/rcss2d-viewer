@@ -16,6 +16,7 @@ async function cycleOf(page: Page): Promise<number> {
 test.describe('Ao vivo com rcssserver', () => {
   test('acompanha um rcssserver de verdade pela ponte', async ({ page }) => {
     await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await page.getByRole('button', { name: 'Conectar' }).click()
     await expect(page.getByText('Ao vivo', { exact: true })).toBeVisible({ timeout: START_MS })
     await page.getByRole('button', { name: 'Começar partida' }).click({ timeout: START_MS })
     await expect.poll(() => cycleOf(page), { timeout: START_MS }).toBeGreaterThan(30)

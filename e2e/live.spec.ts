@@ -18,6 +18,13 @@ async function cycleOf(page: Page): Promise<number> {
   return Number(/ciclo (?<cycle>\d+)/.exec(text ?? '')?.groups?.cycle ?? Number.NaN)
 }
 
+/** Arrives by a `?live=` link, which only fills in the field, and connects. */
+async function openLive(page: Page, relay = RELAY): Promise<void> {
+  await page.goto(`/?live=${encodeURIComponent(relay)}`)
+  await expect(page.getByLabel('Endereço ws:// da ponte')).toHaveValue(relay)
+  await page.getByRole('button', { name: 'Conectar' }).click()
+}
+
 async function kickOff(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Começar partida' }).click({ timeout: START_MS })
   await expect(page.getByRole('button', { name: 'Começar partida' })).toHaveCount(0)
@@ -35,7 +42,7 @@ test.describe('Ao vivo', () => {
   })
 
   test('volta no tempo e volta ao vivo', async ({ page }) => {
-    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await openLive(page)
     await kickOff(page)
     const slider = page.getByRole('slider', { name: 'Posição na partida' })
     await slider.focus()
@@ -54,7 +61,7 @@ test.describe('Ao vivo', () => {
   })
 
   test('desconecta, guarda os quadros e salva o .rcg', async ({ page }) => {
-    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await openLive(page)
     await kickOff(page)
     await page.getByRole('button', { name: 'Mais opções' }).click()
     await page.getByRole('menuitem', { name: 'Desconectar' }).click()
@@ -72,7 +79,7 @@ test.describe('Ao vivo', () => {
   })
 
   test('atende WCAG 2.1 AA esperando, ao vivo e desconectado', async ({ page }) => {
-    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await openLive(page)
     await expect(page.getByRole('button', { name: 'Começar partida' })).toBeVisible({
       timeout: START_MS,
     })
@@ -83,6 +90,15 @@ test.describe('Ao vivo', () => {
     await page.getByRole('menuitem', { name: 'Desconectar' }).click()
     await expect(page.getByText(/continuam aqui/)).toBeVisible()
     expect(await blocking(page)).toEqual([])
+  })
+
+  test('um link ?live= só preenche o campo e espera o clique', async ({ page }) => {
+    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await expect(page.getByLabel('Endereço ws:// da ponte')).toHaveValue(RELAY)
+    await page.waitForTimeout(1500)
+    await expect(page.getByRole('button', { name: 'Conectar' })).toBeVisible()
+    await expect(page.getByText('Ao vivo', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Começar partida' })).toHaveCount(0)
   })
 
   test('explica quando a ponte não responde', async ({ page }) => {
@@ -103,7 +119,7 @@ test.describe('Ao vivo no celular', () => {
       const box = await page.getByRole('button', { name }).boundingBox()
       return box !== null && box.x >= 0 && box.x + box.width <= width
     }
-    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await openLive(page)
     await expect(page.getByRole('button', { name: 'Começar partida' })).toBeVisible({
       timeout: START_MS,
     })

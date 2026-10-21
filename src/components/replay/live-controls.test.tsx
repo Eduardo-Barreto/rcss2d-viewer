@@ -93,6 +93,13 @@ describe('OpenLog live form', () => {
     expect(field instanceof HTMLInputElement && field.value).toBe('ws://127.0.0.1:6100')
   })
 
+  test('fills in the relay from a ?live= link without connecting', () => {
+    render(<OpenLog dragging={false} relay="ws://127.0.0.1:6200" />)
+    const field = screen.getByLabelText('Endereço ws:// da ponte')
+    expect(field instanceof HTMLInputElement && field.value).toBe('ws://127.0.0.1:6200')
+    expect(useReplay.getState().live).toBeNull()
+  })
+
   test('refuses a relay outside this machine and points at the field', () => {
     render(<OpenLog dragging={false} />)
     const field = screen.getByLabelText('Endereço ws:// da ponte')
