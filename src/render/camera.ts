@@ -1,7 +1,7 @@
 import { PITCH_LENGTH, PITCH_WIDTH } from '@/analysis/params'
 
-/** Meters of grass drawn around the lines, enough for the goals and a ball just out. */
-export const PITCH_MARGIN = 4
+/** Meters of grass around the lines, the server's `PITCH_MARGIN` (rcssserver `src/serverparam.cpp:134`). */
+export const PITCH_MARGIN = 5
 
 const HALF = 0.5
 const MIN_ZOOM = 0.5

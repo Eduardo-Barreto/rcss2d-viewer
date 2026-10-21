@@ -11,8 +11,8 @@ import {
 } from './camera'
 
 const WIDE: Viewport = {
-  width: 1130,
-  height: 760,
+  width: 1150,
+  height: 780,
   insets: { top: 0, right: 0, bottom: 0, left: 0 },
 }
 const TALL: Viewport = {
@@ -26,8 +26,8 @@ describe('camera', () => {
     const camera = fitCamera(WIDE)
     expect(camera.upright).toBe(false)
     expect(camera.scale).toBeCloseTo(10)
-    expect(toScreen(camera, WIDE, { x: 0, y: 0 })).toEqual({ x: 565, y: 380 })
-    expect(toScreen(camera, WIDE, { x: 52.5, y: 34 })).toEqual({ x: 1090, y: 720 })
+    expect(toScreen(camera, WIDE, { x: 0, y: 0 })).toEqual({ x: 575, y: 390 })
+    expect(toScreen(camera, WIDE, { x: 52.5, y: 34 })).toEqual({ x: 1100, y: 730 })
   })
 
   test('stands the pitch upright on a portrait screen with the left goal at the bottom', () => {
