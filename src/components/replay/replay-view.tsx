@@ -97,7 +97,7 @@ function useDeepLink(): void {
     const { pathname } = window.location
     const current = useReplay.getState().match
     if (current === null) {
-      if (shown.current) window.history.replaceState(null, '', pathname)
+      if (shown.current) window.history.replaceState(window.history.state, '', pathname)
       shown.current = false
       return
     }
@@ -105,7 +105,7 @@ function useDeepLink(): void {
     const { cycle } = arrival.current
     arrival.current = { url: null, live: null, cycle: null }
     if (cycle !== null && live === null) useReplay.getState().seek(frameOfCycle(current, cycle))
-    window.history.replaceState(null, '', addressOf(pathname, { url, live }, cycle))
+    window.history.replaceState(window.history.state, '', addressOf(pathname, { url, live }, cycle))
   }, [hasMatch, url, live])
 
   const wasPlaying = useRef(false)
@@ -114,7 +114,7 @@ function useDeepLink(): void {
     wasPlaying.current = playing
     if (match === null || !paused) return
     const hash = cycleHash(cycleAt(match, useReplay.getState().frame))
-    if (window.location.hash !== hash) window.history.replaceState(null, '', hash)
+    if (window.location.hash !== hash) window.history.replaceState(window.history.state, '', hash)
   }, [match, playing])
 }
 
