@@ -12,17 +12,22 @@ export interface LiveHandlers {
 export interface LiveConnection {
   /** Asks the server to start the match; the relay only passes it on before the kick-off. */
   kickOff: () => void
-  /** Leaves the session and stops the worker. */
+  /** Closes the connection and keeps what arrived, for {@link LiveConnection.save}. */
+  disconnect: () => void
+  /** The match so far as a gzipped `.rcg`, null when it cannot be saved. */
+  save: () => Promise<Blob | null>
+  /** Stops the worker and drops everything it kept. */
   stop: () => void
 }
 
 /**
  * Connects to a relay from the parser worker. The URL must already have passed
- * `checkLiveUrl`. Each reply lands in one of the handlers, and the worker goes away when the
- * session ends.
+ * `checkLiveUrl`. The worker outlives the connection, so the match can still be saved, until
+ * {@link LiveConnection.stop}.
  */
 export function connectLive(url: string, handlers: LiveHandlers): LiveConnection {
   const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
+  const saves: ((file: Blob | null) => void)[] = []
   const send = (request: WorkerRequest) => {
     worker.postMessage(request, [])
   }
@@ -30,21 +35,27 @@ export function connectLive(url: string, handlers: LiveHandlers): LiveConnection
     const reply = event.data
     if (reply.kind === 'live-open') handlers.open(reply.server)
     else if (reply.kind === 'live-delta') handlers.delta(reply.delta)
-    else {
-      worker.terminate()
-      handlers.end(reply.reason)
-    }
+    else if (reply.kind === 'live-end') handlers.end(reply.reason)
+    else saves.shift()?.(reply.file)
   })
   worker.addEventListener('error', () => {
     worker.terminate()
+    for (const resolve of saves.splice(0)) resolve(null)
     handlers.end('closed')
   })
   send({ kind: 'live', url })
   return {
     kickOff: () => send({ kind: 'command', command: '(dispstart)' }),
+    disconnect: () => send({ kind: 'stop' }),
+    save: () => {
+      const { promise, resolve } = Promise.withResolvers<Blob | null>()
+      saves.push(resolve)
+      send({ kind: 'save' })
+      return promise
+    },
     stop: () => {
-      send({ kind: 'stop' })
       worker.terminate()
+      for (const resolve of saves.splice(0)) resolve(null)
     },
   }
 }

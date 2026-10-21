@@ -1,4 +1,5 @@
 import { frameBuffers } from './columns'
+import { monitorLinesToRcg } from './monitor-file'
 import { DEFAULT_LIMITS, RcgParser, type RcgLimits } from './parser'
 import type { LiveCommand, LiveEnd, LiveReply } from './protocol'
 import { RcgError } from './scanner'
@@ -61,6 +62,11 @@ export class LiveSession {
   private session: number | null = null
   private opened = false
   private ended = false
+  /** Every line kept, for saving the match; a frame the parser folds into the last one replaces it. */
+  private readonly raw: string[] = []
+  private rawBytes = 0
+  private rawFull = false
+  private lastShow = -1
 
   constructor(url: string, emit: LiveEmit, options: Partial<LiveSessionOptions> = {}) {
     const { open, limits, flushMs } = { ...DEFAULT_OPTIONS, ...options }
@@ -125,13 +131,46 @@ export class LiveSession {
     this.emit({ kind: 'live-open', server: status.server }, [])
   }
 
+  /**
+   * The match so far as a gzipped version 6 `.rcg`, or null when nothing arrived or the lines
+   * outgrew the size limit and stopped being kept.
+   */
+  async save(): Promise<Blob | null> {
+    if (this.rawFull || this.raw.length === 0) return null
+    const text = new Blob([monitorLinesToRcg(this.raw)]).stream()
+    return new Response(text.pipeThrough(new CompressionStream('gzip'))).blob()
+  }
+
   private line(line: string): void {
+    const frames = this.parser.frameCount
+    const skipped = this.parser.skipped
     try {
       this.parser.pushLast(line)
     } catch (error) {
       if (!(error instanceof RcgError)) throw error
       this.end(this.parser.frameCount >= this.limits.maxFrames ? 'full' : 'invalid')
+      return
     }
+    if (line !== '' && this.parser.skipped === skipped) {
+      this.record(line, this.parser.frameCount > frames)
+    }
+  }
+
+  private record(line: string, added: boolean): void {
+    if (this.rawFull) return
+    const show = line.startsWith('(show ')
+    if (show && !added && this.lastShow >= 0) {
+      this.raw[this.lastShow] = line
+      return
+    }
+    this.rawBytes += line.length
+    if (this.rawBytes > this.limits.maxBytes) {
+      this.rawFull = true
+      this.raw.length = 0
+      return
+    }
+    const at = this.raw.push(line) - 1
+    if (show) this.lastShow = at
   }
 
   private end(reason: LiveEnd): void {

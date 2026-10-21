@@ -88,6 +88,42 @@ describe('LiveSession', () => {
     expect(transfers.some((list) => list.length > 0)).toBe(true)
   })
 
+  test('saves what arrived as a version 6 .rcg that reads like the original', async () => {
+    const { socket, session } = start()
+    socket.open()
+    socket.deliver(UP)
+    for (const line of asMonitorLines(fixtureText)) socket.deliver(line)
+    const file = await session.save()
+    if (file === null) throw new Error('nothing saved')
+    const text = gunzipSync(new Uint8Array(await file.arrayBuffer())).toString('utf8')
+    const original = parseRcgText(fixtureText)
+    const saved = parseRcgText(text)
+    expect(text.startsWith('ULG6\n')).toBe(true)
+    expect(text).not.toContain('(pm ')
+    expect(saved.frames).toEqual(original.frames)
+    expect(saved.playmodes).toEqual(original.playmodes)
+    expect(saved.scores).toEqual(original.scores.slice(0, 1))
+    expect(saved.serverParams).toEqual(original.serverParams)
+  })
+
+  test('saves one frame for a wait the parser folded, and nothing before any line', async () => {
+    const { socket, session } = start()
+    expect(await session.save()).toBeNull()
+    socket.open()
+    for (const ball of [1, 2, 3]) {
+      socket.deliver(
+        showLine(0, [ball, 0, 0, 0], []).replace('(show 0', '(show 0 (pm 1) (tm a b 0 0)'),
+      )
+    }
+    const file = await session.save()
+    if (file === null) throw new Error('nothing saved')
+    const saved = parseRcgText(
+      gunzipSync(new Uint8Array(await file.arrayBuffer())).toString('utf8'),
+    )
+    expect(saved.frames.count).toBe(1)
+    expect(saved.frames.ball[0]).toBe(3)
+  })
+
   test('sends nothing when nothing arrived', () => {
     const { replies, session } = start()
     session.flush()

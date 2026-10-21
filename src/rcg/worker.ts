@@ -34,5 +34,10 @@ self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
   if (request.kind === 'load') void load(request.source)
   else if (request.kind === 'live') live = new LiveSession(request.url, reply)
   else if (request.kind === 'command') live?.command(request.command)
-  else live?.stop()
+  else if (request.kind === 'stop') live?.stop()
+  else void save(live)
 })
+
+async function save(session: LiveSession | null): Promise<void> {
+  reply({ kind: 'live-saved', file: session === null ? null : await session.save() })
+}

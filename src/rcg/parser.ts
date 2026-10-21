@@ -316,6 +316,11 @@ export class RcgParser {
     return this.store.count
   }
 
+  /** Lines skipped so far, because they did not parse or went past a limit. */
+  get skipped(): number {
+    return this.skippedLines
+  }
+
   /** Hands over what arrived since the last call, or null when nothing did. */
   drain(): MatchDelta | null {
     const { sent } = this

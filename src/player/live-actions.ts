@@ -31,7 +31,7 @@ function cancelAnalysis(): void {
   analysisTimer = null
 }
 
-/** Closes the live connection, if any, without touching the state. */
+/** Stops the live worker, if any, without touching the state. */
 export function leaveLive(): void {
   connection?.stop()
   connection = null
@@ -46,7 +46,7 @@ export function leaveLive(): void {
 export function liveActions(
   set: SetState,
   get: GetState,
-): Pick<ReplayState, 'connect' | 'disconnect' | 'kickOff' | 'followLive'> {
+): Pick<ReplayState, 'connect' | 'disconnect' | 'saveLive' | 'kickOff' | 'followLive'> {
   const patch = (change: Partial<LiveState>) => {
     const { live } = get()
     if (live !== null) set({ live: { ...live, ...change } })
@@ -62,11 +62,12 @@ export function liveActions(
     else analysisTimer ??= setTimeout(analyze, LIVE_ANALYSIS_MS)
   }
   const finish = (reason: LiveEnd) => {
-    leaveLive()
     if (get().match === null) {
+      leaveLive()
       set({ ...EMPTY, status: 'error', error: END_TEXT[reason] })
       return
     }
+    cancelAnalysis()
     analyze()
     patch({ phase: 'ended', end: reason, following: false })
   }
@@ -106,13 +107,19 @@ export function liveActions(
     },
 
     disconnect() {
-      if (connection === null) return
-      if (get().match !== null) {
-        finish('closed')
+      const { live, match } = get()
+      if (connection === null || live === null || live.phase === 'ended') return
+      if (match === null) {
+        leaveLive()
+        set(EMPTY)
         return
       }
-      leaveLive()
-      set(EMPTY)
+      connection.disconnect()
+      finish('closed')
+    },
+
+    async saveLive() {
+      return (await connection?.save()) ?? null
     },
 
     kickOff() {

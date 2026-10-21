@@ -11,6 +11,7 @@ export type WorkerRequest =
   | { kind: 'live'; url: string }
   | { kind: 'command'; command: LiveCommand }
   | { kind: 'stop' }
+  | { kind: 'save' }
 
 /** Why a live session ended. */
 export type LiveEnd =
@@ -36,3 +37,5 @@ export type LiveReply =
   | { kind: 'live-open'; server: 'up' | 'down' }
   | { kind: 'live-delta'; delta: MatchDelta }
   | { kind: 'live-end'; reason: LiveEnd }
+  /** The match as a gzipped `.rcg`, null when it cannot be saved. */
+  | { kind: 'live-saved'; file: Blob | null }

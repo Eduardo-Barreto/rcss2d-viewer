@@ -11,6 +11,7 @@ const replay = () => useReplay.getState()
 interface Fake {
   handlers: LiveHandlers
   kicks: number
+  disconnected: boolean
   stopped: boolean
 }
 
@@ -24,12 +25,16 @@ function handlers(): LiveHandlers {
 
 function connect(): void {
   replay().connect('ws://127.0.0.1:6100', (_url, given) => {
-    const opened: Fake = { handlers: given, kicks: 0, stopped: false }
+    const opened: Fake = { handlers: given, kicks: 0, disconnected: false, stopped: false }
     fake = opened
     return {
       kickOff: () => {
         opened.kicks++
       },
+      disconnect: () => {
+        opened.disconnected = true
+      },
+      save: () => Promise.resolve(new Blob(['ULG6\n'])),
       stop: () => {
         opened.stopped = true
       },
@@ -118,7 +123,7 @@ describe('live replay', () => {
       status: 'ready',
       live: { phase: 'ended', end: 'restarted', following: false },
     })
-    expect(fake?.stopped).toBe(true)
+    expect(fake?.stopped).toBe(false)
     replay().followLive()
     expect(replay().live?.following).toBe(false)
     replay().togglePlay()
@@ -130,15 +135,19 @@ describe('live replay', () => {
     handlers().end('unreachable')
     expect(replay()).toMatchObject({ status: 'error', live: null })
     expect(replay().error).toContain('just relay')
+    expect(fake?.stopped).toBe(true)
   })
 
-  test('disconnecting keeps the frames; before any frame it goes back to empty', () => {
+  test('disconnecting keeps the frames; before any frame it goes back to empty', async () => {
     connect()
     handlers().delta(frames(1, 3))
     replay().disconnect()
     expect(replay()).toMatchObject({ status: 'ready', live: { phase: 'ended', end: 'closed' } })
-    expect(fake?.stopped).toBe(true)
+    expect(fake).toMatchObject({ disconnected: true, stopped: false })
+    expect(await replay().saveLive()).not.toBeNull()
+    const first = fake
     connect()
+    expect(first?.stopped).toBe(true)
     replay().disconnect()
     expect(replay()).toMatchObject({ status: 'empty', live: null })
   })

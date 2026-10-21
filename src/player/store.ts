@@ -76,6 +76,8 @@ export interface ReplayState {
   connect: (url: string, connector?: LiveConnector) => void
   /** Leaves the live session and keeps the frames that arrived. */
   disconnect: () => void
+  /** The live match so far as a gzipped `.rcg`, null when it cannot be saved. */
+  saveLive: () => Promise<Blob | null>
   /** Asks the server to start the match. */
   kickOff: () => void
   /** Jumps to the newest frame and sticks to it. */
