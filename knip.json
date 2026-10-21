@@ -4,9 +4,10 @@
     "src/**/*.test.{ts,tsx}",
     "src/test/matchers.d.ts",
     "relay/main.ts",
+    "e2e/live-server.ts",
     "relay/**/*.test.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}", "relay/**/*.ts"],
+  "project": ["src/**/*.{ts,tsx}", "relay/**/*.ts", "e2e/**/*.ts"],
   "ignore": ["src/components/ui/**"],
   "ignoreDependencies": [
     "tailwindcss",
