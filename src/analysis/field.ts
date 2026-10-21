@@ -1,5 +1,12 @@
 import { PLAY_ON } from '@/rcg/playmodes'
-import { BALL_STRIDE, type Match, PLAYERS_PER_SIDE, SLOT_COUNT, type Side } from '@/rcg/types'
+import {
+  BALL_STRIDE,
+  type Match,
+  PLAYERS_PER_SIDE,
+  PlayerState,
+  SLOT_COUNT,
+  type Side,
+} from '@/rcg/types'
 
 import { PITCH_LENGTH, PITCH_WIDTH } from './params'
 
@@ -63,10 +70,19 @@ export function slotsOf(side: Side): number[] {
   return Array.from({ length: PLAYERS_PER_SIDE }, (_, i) => first + i)
 }
 
+/** True when the slot holds a connected player at a frame. */
+function onPitch(match: Match, k: number): boolean {
+  const { type, state } = match.frames
+  return (type[k] ?? -1) >= 0 && ((state[k] ?? 0) & PlayerState.STAND) !== 0
+}
+
 /**
  * The offside line a defending side draws at a frame: its second-to-last player, no deeper
  * than the ball and never past the halfway line, as `OffsideRef::setOffsideMark` computes it
- * when a kick happens (rcssserver `src/referee.cpp:1124`). `null` with fewer than two players.
+ * when a kick happens (rcssserver `src/referee.cpp:1124`). Disconnected players do not count, as
+ * the server skips `!isEnabled()` (`src/referee.cpp:1184,1210`); a disabled player is written
+ * with the `STAND` bit cleared (`Player::disable`, `src/player.cpp:479`). `null` with fewer than
+ * two players.
  */
 export function offsideLine(match: Match, frame: number, defending: Side): number | null {
   const f = match.frames
@@ -74,7 +90,7 @@ export function offsideLine(match: Match, frame: number, defending: Side): numbe
   const depths: number[] = []
   for (const slot of slotsOf(defending)) {
     const k = frame * SLOT_COUNT + slot
-    if ((f.type[k] ?? -1) >= 0) depths.push(sign * (f.players.x[k] ?? 0))
+    if (onPitch(match, k)) depths.push(sign * (f.players.x[k] ?? 0))
   }
   if (depths.length < 2) return null
   depths.sort((a, b) => a - b)

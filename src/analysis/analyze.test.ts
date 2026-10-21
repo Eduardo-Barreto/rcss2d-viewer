@@ -206,6 +206,19 @@ describe('offsideLine', () => {
     expect(offsideLine(match, 0, 'r')).toBe(0)
     expect(offsideLine(match, 1, 'r')).toBeNull()
   })
+
+  test('skips a disconnected defender', () => {
+    const gone: PlayerSpec = { side: 'r', unum: 2, x: 45, y: -37, state: PlayerState.YELLOW_CARD }
+    const keeper: PlayerSpec = { side: 'r', unum: 1, x: 50, y: 0 }
+    const back: PlayerSpec = { side: 'r', unum: 3, x: 30, y: 0 }
+    const match = parse(
+      ...frames([
+        [10, 0, 0, 0],
+        [keeper, gone, back],
+      ]),
+    )
+    expect(offsideLine(match, 0, 'r')).toBe(30)
+  })
 })
 
 describe('heatmapOf', () => {
