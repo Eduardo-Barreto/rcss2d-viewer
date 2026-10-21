@@ -83,6 +83,8 @@ test.describe('Página inicial', () => {
 
   test('voltar do app devolve a página inicial onde ela estava', async ({ page }) => {
     await page.goto('/')
+    const hero = page.getByRole('region', { name: 'O replay da 2D, direto no navegador' })
+    await expect(hero.getByText(/^ciclo \d+$/)).toBeVisible()
     await page
       .getByRole('heading', { name: 'rcssviewer e rcssmonitor, lado a lado' })
       .scrollIntoViewIfNeeded()
