@@ -38,7 +38,8 @@ rcg → analysis → render → player → components, routes
 
 - `?url=https://…/partida.rcg.gz` abre o log ao entrar.
 - `#t=1234` pula para o ciclo 1234 depois de ler. Ao pausar, o viewer escreve o ciclo atual no `#t=`, então copiar o endereço compartilha o lance.
+- O `#t=` da chegada vale só para o primeiro log. Cada log aberto depois reescreve o endereço inteiro: `?url=` só quando veio da rede, sem `#t=`. Voltar para a tela inicial limpa os dois.
 
 ## Segurança
 
-O `.rcg` é dado de fora. Nada do log vira HTML, URL, estilo ou código: nomes de time, mensagens e parâmetros aparecem como texto do React ou desenhados no canvas, e os logos de time (XPM dentro do log) são decodificados para pixels com limites de tamanho e cor. A CSP de `public/_headers` só deixa rodar script do próprio site e só deixa conectar em `https:`. `just headers` confere o que está no ar.
+O `.rcg` é dado de fora. Nada do log vira HTML, URL, estilo ou código: nomes de time, mensagens e parâmetros aparecem como texto do React ou desenhados no canvas, e os logos de time (XPM dentro do log) são decodificados para pixels com limites de tamanho e cor. A CSP de `public/_headers` só deixa rodar script do próprio site e só deixa conectar em `https:`. O tema guardado é aplicado por `public/theme.js`, carregado no `<head>`, porque a CSP barra o script inline do next-themes. `just headers` confere o que está no ar.

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { openFixture } from './fixture.ts'
+import { FIXTURE, openFixture } from './fixture.ts'
 
 test.describe('Replay', () => {
   test('abre a tela inicial', async ({ page }) => {
@@ -61,5 +61,26 @@ test.describe('Replay', () => {
     await openFixture(page)
     await page.getByRole('button', { name: 'Abrir outra partida' }).click()
     await expect(page.getByRole('button', { name: 'Escolher arquivo' })).toBeVisible()
+  })
+})
+
+test.describe('Endereço', () => {
+  test('pula para o ciclo do #t= só no primeiro log e limpa o endereço no seguinte', async ({
+    page,
+  }) => {
+    await page.route('https://logs.example/**', (route) =>
+      route.fulfill({ path: FIXTURE, headers: { 'access-control-allow-origin': '*' } }),
+    )
+    await page.goto('/?url=https%3A%2F%2Flogs.example%2Fjogo.rcg.gz#t=120')
+    const slider = page.getByRole('slider', { name: 'Posição na partida' })
+    await expect(slider).toHaveAttribute('aria-valuetext', /ciclo 120$/)
+    await expect(page).toHaveURL(/\?url=https%3A%2F%2Flogs\.example%2Fjogo\.rcg\.gz#t=120$/)
+
+    await page.getByRole('button', { name: 'Abrir outra partida' }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await page.getByLabel('Arquivo .rcg').setInputFiles(FIXTURE)
+    await expect(slider).toHaveAttribute('aria-valuenow', '0')
+    expect(new URL(page.url()).search).toBe('')
+    expect(new URL(page.url()).hash).toBe('')
   })
 })

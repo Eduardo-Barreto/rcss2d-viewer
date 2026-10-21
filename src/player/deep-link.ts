@@ -20,3 +20,12 @@ export function parseDeepLink(search: string, hash: string): DeepLink {
 export function cycleHash(cycle: number): string {
   return `#t=${Math.max(0, Math.round(cycle))}`
 }
+
+/**
+ * The address for an open log: `?url=` only when it came from the network, so a local file
+ * never leaves a stale link behind, plus the cycle when there is one.
+ */
+export function addressOf(pathname: string, url: string | null, cycle: number | null): string {
+  const search = url === null ? '' : `?${new URLSearchParams({ url }).toString()}`
+  return `${pathname}${search}${cycle === null ? '' : cycleHash(cycle)}`
+}

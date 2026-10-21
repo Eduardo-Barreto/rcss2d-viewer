@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { cycleHash, parseDeepLink } from '@/player/deep-link'
+import { addressOf, cycleHash, parseDeepLink } from '@/player/deep-link'
 import { cycleAt, frameOfCycle } from '@/player/format'
 import { momentsOf } from '@/player/moments'
 import { useReplay } from '@/player/store'
+import type { Match } from '@/rcg/types'
 
 import { HelpDialog } from './help-dialog'
 import { Layers } from './layers'
@@ -69,26 +70,43 @@ function useFileDrop(): boolean {
   return dragging
 }
 
-/** `?url=` opens a log on arrival, `#t=` seeks once it is read, and pausing writes `#t=` back. */
+/**
+ * `?url=` opens a log on arrival and `#t=` seeks once that first log is read. Every log opened
+ * after it rewrites the whole address, and pausing writes `#t=` back.
+ */
 function useDeepLink(): void {
   const match = useReplay((s) => s.match)
+  const url = useReplay((s) => s.url)
   const playing = useReplay((s) => s.playing)
+  const arrival = useRef(parseDeepLink(window.location.search, window.location.hash))
+  const shown = useRef<Match | null>(null)
 
   useEffect(() => {
-    const { url } = parseDeepLink(window.location.search, '')
-    if (url !== null && useReplay.getState().status === 'empty') {
-      void useReplay.getState().open({ kind: 'url', url })
+    const first = arrival.current.url
+    if (first !== null && useReplay.getState().status === 'empty') {
+      void useReplay.getState().open({ kind: 'url', url: first })
     }
   }, [])
 
   useEffect(() => {
-    if (match === null) return
-    const { cycle } = parseDeepLink('', window.location.hash)
+    const { pathname } = window.location
+    if (match === null) {
+      if (shown.current !== null) window.history.replaceState(null, '', pathname)
+      shown.current = null
+      return
+    }
+    shown.current = match
+    const { cycle } = arrival.current
+    arrival.current = { url: null, cycle: null }
     if (cycle !== null) useReplay.getState().seek(frameOfCycle(match, cycle))
-  }, [match])
+    window.history.replaceState(null, '', addressOf(pathname, url, cycle))
+  }, [match, url])
 
+  const wasPlaying = useRef(false)
   useEffect(() => {
-    if (match === null || playing) return
+    const paused = wasPlaying.current && !playing
+    wasPlaying.current = playing
+    if (match === null || !paused) return
     const hash = cycleHash(cycleAt(match, useReplay.getState().frame))
     if (window.location.hash !== hash) window.history.replaceState(null, '', hash)
   }, [match, playing])

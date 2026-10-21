@@ -35,6 +35,8 @@ export interface ReplayState {
   progress: { loaded: number; total: number | null }
   error: string | null
   name: string
+  /** Remote address of the open log, `null` for a local file. */
+  url: string | null
   match: Match | null
   analysis: Analysis | null
   /** Playhead, a frame index that may fall between two frames. */
@@ -49,7 +51,7 @@ export interface ReplayState {
   panelOpen: boolean
   tab: PanelTab
   open: (source: LogSource) => Promise<void>
-  show: (match: Match, name: string) => void
+  show: (match: Match, name: string, url?: string | null) => void
   close: () => void
   seek: (frame: number) => void
   step: (frames: number) => void
@@ -79,6 +81,7 @@ const EMPTY = {
   progress: { loaded: 0, total: null },
   error: null,
   name: '',
+  url: null,
   match: null,
   analysis: null,
   frame: 0,
@@ -125,7 +128,9 @@ export const useReplay = create<ReplayState>()(
             (loaded, total) => set({ progress: { loaded, total } }),
             controller.signal,
           )
-          if (pending === controller) get().show(match, sourceName(source))
+          if (pending === controller) {
+            get().show(match, sourceName(source), source.kind === 'url' ? source.url : null)
+          }
         } catch (error) {
           if (controller.signal.aborted) return
           set({ status: 'error', error: errorText(error) })
@@ -134,8 +139,8 @@ export const useReplay = create<ReplayState>()(
         }
       },
 
-      show(match, name) {
-        set({ ...EMPTY, status: 'ready', name, match, analysis: analyzeMatch(match) })
+      show(match, name, url = null) {
+        set({ ...EMPTY, status: 'ready', name, url, match, analysis: analyzeMatch(match) })
       },
 
       close() {
