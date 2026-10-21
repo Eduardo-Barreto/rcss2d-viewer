@@ -48,7 +48,7 @@ function PanelTabs({ moments, onClose }: { moments: Moment[]; onClose?: () => vo
         >
           {TABS.map(({ tab: value, label }) => (
             <Tabs.Trigger
-              className="relative h-9 flex-none rounded-[8px] px-1.5 text-[12px] font-medium whitespace-nowrap text-muted-foreground transition-colors duration-100 outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=active]:text-foreground data-[state=active]:after:absolute data-[state=active]:after:inset-x-1.5 data-[state=active]:after:-bottom-px data-[state=active]:after:h-0.5 data-[state=active]:after:rounded-full data-[state=active]:after:bg-foreground"
+              className="focus-ring-inset relative h-9 flex-none rounded-[8px] px-1.5 text-[12px] font-medium whitespace-nowrap text-muted-foreground transition-colors duration-100 hover:text-foreground phone:h-10 phone:px-2 data-[state=active]:text-foreground data-[state=active]:after:absolute data-[state=active]:after:inset-x-1.5 data-[state=active]:after:-bottom-px data-[state=active]:after:h-0.5 data-[state=active]:after:rounded-full data-[state=active]:after:bg-foreground"
               key={value}
               value={value}
             >
@@ -62,19 +62,22 @@ function PanelTabs({ moments, onClose }: { moments: Moment[]; onClose?: () => vo
           </IslandButton>
         )}
       </div>
-      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 outline-none" value="stats">
+      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 focus-ring-inset" value="stats">
         <StatsTab />
       </Tabs.Content>
-      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 outline-none" value="events">
+      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 focus-ring-inset" value="events">
         <EventsTab moments={moments} />
       </Tabs.Content>
-      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 outline-none" value="player">
+      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 focus-ring-inset" value="player">
         <PlayerTab />
       </Tabs.Content>
-      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 outline-none" value="messages">
+      <Tabs.Content
+        className="min-h-0 flex-1 overflow-y-auto p-3 focus-ring-inset"
+        value="messages"
+      >
         <MessagesTab />
       </Tabs.Content>
-      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 outline-none" value="params">
+      <Tabs.Content className="min-h-0 flex-1 overflow-y-auto p-3 focus-ring-inset" value="params">
         <ParamsTab />
       </Tabs.Content>
     </Tabs.Root>

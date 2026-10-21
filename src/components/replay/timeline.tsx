@@ -101,7 +101,7 @@ export function Timeline({ moments }: { moments: Moment[] }) {
         <Slider.Thumb
           aria-label="Posição na partida"
           aria-valuetext={`${clockOf(cycle, stepMs)}, ciclo ${cycle}`}
-          className="block h-7 w-[3px] -translate-y-[-2px] rounded-full bg-foreground shadow-[0_0_0_2px_var(--card)] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="block h-7 w-[3px] -translate-y-[-2px] rounded-full bg-foreground shadow-[0_0_0_2px_var(--card)] focus-ring"
         />
       </Slider.Root>
       {hover === null ? null : (

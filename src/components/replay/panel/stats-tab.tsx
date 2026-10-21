@@ -70,7 +70,7 @@ function Roster({ side }: { side: Side }) {
             <li key={slot}>
               <button
                 aria-pressed={selected === slot}
-                className="group flex h-8 w-full items-center gap-2 rounded-[8px] px-2 text-left text-[13px] transition-colors duration-100 hover:bg-accent aria-pressed:bg-foreground aria-pressed:text-background"
+                className="group focus-ring-inset flex h-8 w-full items-center gap-2 rounded-[8px] px-2 text-left text-[13px] transition-colors duration-100 hover:bg-accent aria-pressed:bg-foreground aria-pressed:text-background phone:h-10"
                 onClick={() => select(selected === slot ? -1 : slot)}
                 type="button"
               >

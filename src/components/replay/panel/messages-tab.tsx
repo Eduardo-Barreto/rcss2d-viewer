@@ -24,7 +24,7 @@ export function MessagesTab() {
         {messages.slice(0, shown).map((message, index) => (
           <li key={`${message.frame}-${index}`}>
             <button
-              className="flex w-full flex-col gap-0.5 rounded-[8px] px-2 py-1.5 text-left transition-colors duration-100 hover:bg-accent"
+              className="focus-ring-inset flex w-full flex-col gap-0.5 rounded-[8px] px-2 py-1.5 text-left transition-colors duration-100 hover:bg-accent"
               onClick={() => seek(Math.min(message.frame, (match?.frames.count ?? 1) - 1))}
               type="button"
             >

@@ -164,6 +164,21 @@
   bottom: calc(--value([length]) + env(safe-area-inset-bottom));
 }
 
+/* The keyboard focus mark for controls outside shadcn: a 2 px ring, outside or inset. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

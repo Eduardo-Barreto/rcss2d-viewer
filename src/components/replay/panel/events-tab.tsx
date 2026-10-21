@@ -1,6 +1,8 @@
+import { Check } from 'lucide-react'
 import { ToggleGroup } from 'radix-ui'
 import { useMemo, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { clockOf } from '@/player/format'
 import { type Moment, type MomentKind, MOMENT_LEAD_FRAMES } from '@/player/moments'
@@ -14,6 +16,7 @@ const KINDS: readonly { kind: MomentKind; label: string }[] = [
   { kind: 'setPiece', label: 'Bola parada' },
 ]
 const DEFAULT_KINDS: MomentKind[] = ['goal', 'shot', 'foul', 'card']
+const ALL_KINDS: MomentKind[] = KINDS.map(({ kind }) => kind)
 const DOT = { l: 'bg-(--team-l)', r: 'bg-(--team-r)' } as const
 
 function isKind(value: string): value is MomentKind {
@@ -27,7 +30,7 @@ function Row({ moment }: { moment: Moment }) {
     <li>
       <button
         className={cn(
-          'flex min-h-8 w-full items-center gap-2 rounded-[8px] px-2 py-1 text-left text-[13px] transition-colors duration-100 hover:bg-accent',
+          'focus-ring-inset flex min-h-8 w-full items-center gap-2 rounded-[8px] px-2 py-1 text-left text-[13px] transition-colors duration-100 hover:bg-accent phone:min-h-10',
           moment.strong && 'font-medium',
         )}
         onClick={() => seek(Math.max(0, moment.frame - MOMENT_LEAD_FRAMES))}
@@ -67,17 +70,27 @@ export function EventsTab({ moments }: { moments: Moment[] }) {
       >
         {KINDS.map(({ kind, label }) => (
           <ToggleGroup.Item
-            className="h-7 rounded-full border border-border px-2.5 text-[12px] text-muted-foreground transition-colors duration-100 hover:text-foreground data-[state=on]:border-transparent data-[state=on]:bg-foreground data-[state=on]:text-background"
+            className="group focus-ring flex h-7 items-center gap-1 rounded-full border border-foreground/25 px-2.5 text-[12px] text-muted-foreground transition-colors duration-100 hover:text-foreground data-[state=on]:border-transparent data-[state=on]:bg-foreground data-[state=on]:pl-2 data-[state=on]:text-background phone:h-10 phone:px-3.5 phone:data-[state=on]:pl-3"
             key={kind}
             value={kind}
           >
+            <Check aria-hidden className="hidden size-3.5 group-data-[state=on]:block" />
             {label}
           </ToggleGroup.Item>
         ))}
       </ToggleGroup.Root>
-      {shown.length === 0 ? (
-        <p className="px-2 text-[13px] text-muted-foreground">Nenhum lance desse tipo.</p>
-      ) : (
+      {moments.length === 0 ? (
+        <p className="px-2 text-[13px] text-muted-foreground">Este log não tem lances.</p>
+      ) : null}
+      {moments.length > 0 && shown.length === 0 ? (
+        <div className="flex flex-col items-start gap-2 px-2">
+          <p className="text-[13px] text-muted-foreground">Nenhum lance desse tipo.</p>
+          <Button onClick={() => setKinds(ALL_KINDS)} size="sm" variant="outline">
+            Mostrar todos
+          </Button>
+        </div>
+      ) : null}
+      {shown.length === 0 ? null : (
         <ul className="flex flex-col">
           {shown.map((moment) => (
             <Row key={`${moment.frame}-${moment.kind}-${moment.slot}`} moment={moment} />

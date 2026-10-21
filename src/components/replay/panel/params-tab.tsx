@@ -3,7 +3,7 @@ import { useDeferredValue, useId, useMemo, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { filterParams } from '@/player/panel-data'
 import { useReplay } from '@/player/store'
-import type { ParamMap } from '@/rcg/types'
+import type { Match, ParamMap } from '@/rcg/types'
 
 function Table({ title, params, query }: { title: string; params: ParamMap; query: string }) {
   const rows = useMemo(() => filterParams(params, query), [params, query])
@@ -25,6 +25,23 @@ function Table({ title, params, query }: { title: string; params: ParamMap; quer
   )
 }
 
+function Empty({ match, query }: { match: Match; query: string }) {
+  const total = match.serverParams.size + match.playerParams.size
+  const found = useMemo(
+    () =>
+      filterParams(match.serverParams, query).length +
+      filterParams(match.playerParams, query).length,
+    [match, query],
+  )
+  if (total === 0) {
+    return <p className="px-2 text-[13px] text-muted-foreground">Este log não traz parâmetros.</p>
+  }
+  if (found > 0) return null
+  return (
+    <p className="px-2 text-[13px] text-muted-foreground">Nenhum parâmetro com “{query.trim()}”.</p>
+  )
+}
+
 /** The server and player parameters written in the log, searchable by name. */
 export function ParamsTab() {
   const match = useReplay((s) => s.match)
@@ -39,7 +56,7 @@ export function ParamsTab() {
       </label>
       <Input
         autoComplete="off"
-        className="h-8 rounded-[8px] text-[13px]"
+        className="h-8 rounded-[8px] text-base phone:h-10 md:text-[13px]"
         id={id}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Buscar parâmetro"
@@ -49,9 +66,7 @@ export function ParamsTab() {
       />
       <Table params={match.serverParams} query={deferred} title="Servidor" />
       <Table params={match.playerParams} query={deferred} title="Jogadores" />
-      {match.serverParams.size + match.playerParams.size === 0 ? (
-        <p className="px-2 text-[13px] text-muted-foreground">Este log não traz parâmetros.</p>
-      ) : null}
+      <Empty match={match} query={deferred} />
     </div>
   )
 }
