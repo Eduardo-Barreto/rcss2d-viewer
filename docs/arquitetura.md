@@ -11,7 +11,7 @@ O viewer é um site estático. Quem abre escolhe um `.rcg`, o navegador lê, ana
 5. **Análise** (`src/analysis/`). Do `Match` saem eventos, toques, passes, chutes, posse, estatística por jogador e por time, mapa de calor e linha de impedimento. Tudo é função pura sobre as colunas.
 6. **Estado** (`src/player/`). Duas stores zustand: `store.ts` (log aberto, quadro, velocidade, camadas, seleção, painel) e `camera-store.ts` (zoom, centro, seguir a bola ou um jogador).
 7. **Desenho** (`src/render/`). Canvas 2D, redesenhado a cada quadro de animação enquanto toca. A câmera converte metros em pixels. O campo e as camadas são desenhados em metros; números e anéis em pixels, para ficarem legíveis em qualquer zoom. Ver o [ADR 0003](adr/0003-canvas-2d.md).
-8. **Interface** (`src/components/replay/`). Ilhas flutuantes sobre o campo, no jeito do maze-studio: placar, camadas, transporte com linha do tempo, zoom e o painel com Números, Lances, Jogador, Mensagens e Servidor.
+8. **Interface** (`src/components/replay/`, em `/app`). Ilhas flutuantes sobre o campo, no jeito do maze-studio: placar, camadas, transporte com linha do tempo, zoom e o painel com Números, Lances, Jogador, Mensagens e Servidor.
 
 ## Caminho ao vivo
 
@@ -46,8 +46,10 @@ rcg → analysis → render → player → components, routes
 
 ## Endereços
 
-- `?url=https://…/partida.rcg.gz` abre o log ao entrar.
-- `?live=ws://127.0.0.1:6100` preenche o campo da ponte; a conexão espera o clique em "Conectar". Só aceita `ws://` em `127.0.0.1` ou `localhost`, ou `wss://`.
+- `/` é a página inicial (`src/components/landing/`), que toca um trecho real da final da RoboCup 2026 com o próprio renderer. O app fica em `/app`. Ver o [ADR 0005](adr/0005-landing.md).
+- A raiz com qualquer busca ou `#` redireciona para `/app` com os dois intactos, então links antigos como `/?url=…#t=120` continuam abrindo o lance.
+- `/app?url=https://…/partida.rcg.gz` abre o log ao entrar.
+- `/app?live=ws://127.0.0.1:6100` preenche o campo da ponte; a conexão espera o clique em "Conectar". Só aceita `ws://` em `127.0.0.1` ou `localhost`, ou `wss://`.
 - `#t=1234` pula para o ciclo 1234 depois de ler. Ao pausar, o viewer escreve o ciclo atual no `#t=`, então copiar o endereço compartilha o lance.
 - O `#t=` da chegada vale só para o primeiro log. Cada log aberto depois reescreve o endereço inteiro: `?url=` só quando veio da rede, sem `#t=`. Voltar para a tela inicial limpa os dois.
 
