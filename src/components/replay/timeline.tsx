@@ -2,6 +2,7 @@ import { useTheme } from 'next-themes'
 import { Slider } from 'radix-ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { halfEnds } from '@/analysis/params'
 import { clockOf, cycleAt, frameOfCycle } from '@/player/format'
 import type { Moment } from '@/player/moments'
 import { useReplay } from '@/player/store'
@@ -32,14 +33,8 @@ function Strip({ moments }: { moments: Moment[] }) {
       const { width } = element.getBoundingClientRect()
       element.width = Math.round(width * dpr)
       element.height = Math.round(HEIGHT_PX * dpr)
-      const halves: number[] = []
-      for (
-        let cycle = analysis.physics.halfCycles;
-        cycle < (match.frames.cycle[match.frames.count - 1] ?? 0);
-        cycle += analysis.physics.halfCycles
-      ) {
-        halves.push(frameOfCycle(match, cycle))
-      }
+      const last = match.frames.cycle[match.frames.count - 1] ?? 0
+      const halves = halfEnds(analysis.physics, last).map((cycle) => frameOfCycle(match, cycle))
       drawTimeline(ctx, {
         match,
         analysis,

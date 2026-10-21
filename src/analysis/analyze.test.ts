@@ -8,7 +8,7 @@ import { type BallSpec, type PlayerSpec, rcgText, showLine } from '@/test/rcg-bu
 import { analyzeMatch } from './analyze'
 import { findEvents } from './events'
 import { heatmapOf, offsideLine } from './field'
-import { physicsOf } from './params'
+import { halfEnds, physicsOf } from './params'
 
 const STILL: BallSpec = [0, 0, 0, 0]
 
@@ -247,5 +247,58 @@ describe('physicsOf', () => {
     expect(physics.halfCycles).toBe(3000)
     expect(physics.stepMs).toBe(100)
     expect(physics.kickableMargins).toEqual([0.65])
+  })
+
+  test('falls back to the default for values out of range', () => {
+    const match = parseRcgText(
+      rcgText(
+        '(server_param (goal_width -3)(ball_decay 1)(simulator_step 0)(stamina_max 0)(ball_size 99))',
+        showLine(1, STILL, []),
+      ),
+    )
+    const physics = physicsOf(match)
+    expect(physics.goalWidth).toBe(14.02)
+    expect(physics.ballDecay).toBe(0.94)
+    expect(physics.stepMs).toBe(100)
+    expect(physics.staminaMax).toBe(8000)
+    expect(physics.ballSize).toBe(0.085)
+  })
+
+  test('indexes the kickable margin by player type id', () => {
+    const match = parseRcgText(
+      rcgText(
+        '(server_param (kickable_margin 0.7))',
+        '(player_type (id 2)(kickable_margin 0.9))',
+        '(player_type (id 0)(kickable_margin 0.65))',
+        showLine(1, STILL, []),
+      ),
+    )
+    expect(physicsOf(match).kickableMargins).toEqual([0.65, 0.7, 0.9])
+  })
+
+  test('turns the clock off when half_time is not positive', () => {
+    const match = parseRcgText(rcgText('(server_param (half_time -1))', showLine(1, STILL, [])))
+    const physics = physicsOf(match)
+    expect(physics.halfCycles).toBe(0)
+    expect(halfEnds(physics, 10_000)).toEqual([])
+  })
+})
+
+describe('halfEnds', () => {
+  const physics = physicsOf(
+    parseRcgText(
+      rcgText(
+        '(server_param (half_time 300)(extra_half_time 100)(nr_normal_halfs 2)(nr_extra_halfs 2))',
+        showLine(1, STILL, []),
+      ),
+    ),
+  )
+
+  test('stops at the last cycle of a normal match', () => {
+    expect(halfEnds(physics, 6000)).toEqual([3000])
+  })
+
+  test('adds the extra-time halves when the log runs into them', () => {
+    expect(halfEnds(physics, 8500)).toEqual([3000, 6000, 7000, 8000])
   })
 })

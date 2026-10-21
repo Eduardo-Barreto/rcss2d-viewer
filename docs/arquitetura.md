@@ -31,7 +31,8 @@ rcg → analysis → render → player → components, routes
 - **Chute a gol**: chute rumo ao gol atacado que, rolando livre com o `ball_decay` do log, cruzaria a linha de fundo a até 3 m da trave. O alcance máximo é `v / (1 - decay)` (`MPObject::_inc`, `src/object.cpp:623`).
 - **Faltas e cartões**: flags de estado. `FOUL_CHARGED` fica em quem sofreu (`src/referee.cpp:835`); cartão fica em quem cometeu (`src/player.cpp:2806`).
 - **Impedimento**: a linha do penúltimo defensor, limitada pela bola e pelo meio-campo, como `OffsideRef::setOffsideMark` (`src/referee.cpp:1124`).
-- **Campo**: medidas de `src/serverparam.cpp:132`. Gol, decaimento da bola e tamanho do jogador vêm do `server_param` do próprio log quando existe.
+- **Campo**: medidas de `src/serverparam.cpp:132`. Gol, decaimento da bola e tamanho do jogador vêm do `server_param` do próprio log quando existe e está numa faixa que faz sentido (`ball_decay` entre 0 e 1, `simulator_step` positivo, e assim por diante); fora dela vale o padrão do servidor. A margem de chute de cada jogador vem do `player_type` com o mesmo `id`.
+- **Tempos**: a linha do tempo marca o fim de cada tempo a cada `half_time` até `nr_normal_halfs`, depois a cada `extra_half_time` até `nr_extra_halfs`, como o `TimeRef` (`src/referee.cpp:506`). Com `half_time` zero ou negativo o servidor não encerra tempo nenhum, e o viewer não marca nada.
 
 ## Endereços
 
