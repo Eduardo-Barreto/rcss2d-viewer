@@ -13,7 +13,7 @@ export interface ComparisonRow {
   feature: string
   viewer: { support: Support; text: string }
   monitor: { support: Support; text: string }
-  /** True for a row that needs the live mode, which ships in its own change. */
+  /** True for a row that needs the live mode and its local relay. */
   live?: boolean
 }
 
