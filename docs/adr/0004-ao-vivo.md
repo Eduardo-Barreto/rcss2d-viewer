@@ -9,6 +9,7 @@ O viewer lia só arquivo. Para acompanhar uma partida enquanto ela roda, ele pre
 O que o servidor 19.0.0 manda, lido no código:
 
 - `Monitor::setSenders` (`src/monitor.cpp:120`) aceita as versões 1 a 5 e -1 (JSON), registradas em `src/serializermonitor.cpp:850-855`. A versão 5 é a mais nova em texto e escreve as mesmas linhas que o logger põe num `.rcg` v6 (`src/logger.cpp:166-170` usa monitor = log - 1; `src/dispsender.cpp:1137-1142`, `src/initsendermonitor.cpp:378-383`).
+- Um datagrama é uma linha. O servidor escreve cada mensagem num `SocketStreamBuf` de 8192 bytes (`rcss/net/socketstreambuf.hpp:64`) e manda no `flush` de cada linha; a maior linha de uma partida real tem uns 4 KB. A ponte não remonta nada.
 - Cada quadro vem como `(show T (pm N) (tm L R sl sr) ...)` (`DispSenderMonitorV3::sendShow`, `src/dispsender.cpp:443-501`), terminado em `\0`. No log, modo de jogo e placar vêm em linhas próprias; no monitor, dentro do `show`. `Monitor::sendPlayMode` e `sendScore` (`src/monitor.cpp:190-221`) nunca são chamados.
 - Mensagens chegam como `(msg T board "texto")` (`src/dispsender.cpp:504-512`).
 - O monitor manda `(dispstart)` e `(dispbye)`, comparados por igualdade exata (`Monitor::parseCommand`, `src/monitor.cpp:339-410`). `Stadium::kickOff` (`src/stadium.cpp:1049`) confere só se o relógio está no começo de um tempo (`src/stadium.cpp:1060-1067`), não o modo de jogo, então quem filtra é a ponte.
@@ -16,18 +17,21 @@ O que o servidor 19.0.0 manda, lido no código:
 
 ## Decisão
 
-Uma ponte nossa, em Bun, roda na máquina de quem assiste (`relay/`, `just relay`). Ela é o monitor do rcssserver e repassa cada datagrama, sem o `\0`, como texto num WebSocket. A página conecta em `ws://127.0.0.1:6100`, pela tela inicial ou por `?live=`.
+Uma ponte nossa, em Bun, roda na máquina de quem assiste (`relay/`, `just relay`). Ela é o monitor do rcssserver e repassa cada datagrama, sem o `\0`, como texto num WebSocket. A página conecta em `ws://127.0.0.1:6100` pela tela inicial. `?live=` só preenche o campo: a conexão espera o clique em "Conectar", para um link de fora não fazer a página abrir socket local nem disparar o pedido de rede local sozinho.
 
 Na ponte:
 
 - Escuta só em loopback. `--allow-remote` abre para fora com aviso no log.
 - `Origin` em lista: o viewer, as prévias do Pages e o servidor de dev local. Sem `Origin` só com `--allow-no-origin`.
-- Da página para o servidor passam só `(dispstart)` e `(dispbye)`, inteiros, com limite de tamanho e de frequência. `(dispstart)` só sai com o último quadro em `before_kick_off`. Sem exec, sem arquivo, sem eval.
+- A página pode mandar só `(dispstart)` e `(dispbye)`, inteiros, com limite de tamanho e um orçamento de frequência único para todas as conexões (abrir conexão nova não zera nada). `(dispstart)` só vai ao servidor com o último quadro em `before_kick_off`. O `(dispbye)` de uma página não chega ao servidor: fecha só a aba dela. Comando recusado demais fecha a conexão com 1008. Sem exec, sem arquivo, sem eval.
+- No máximo 16 páginas ao mesmo tempo; a 17ª é fechada com 1013 (tente mais tarde).
+- Até o servidor responder, a ponte só aceita `(server_param` vindo do endereço do servidor; a porta de onde ele vem vira a porta dedicada, e depois disso datagrama de outro endereço ou de outra porta é descartado (o `(error` da porta 6000, como `no_more_monitor`, só vai para o log). Sem isso, qualquer processo da máquina podia se passar pelo servidor ou desviar os comandos.
+- Sem resposta, o `(dispinit)` se repete com espera dobrando a partir de 1 s, até 16 s, e a ponte desiste depois de 8 tentativas, com uma linha `server-gave-up` no log que sugere rodar a ponte na rede Docker do servidor.
 - Uma sessão de monitor serve todas as abas. Quem chega depois recebe parâmetros, logos e o último quadro. O `(dispbye)` de uma página fecha só a aba dela; quando a última aba sai, a ponte manda `(dispbye)` ao servidor e esquece a sessão. Se o servidor fica 3 s calado, a página vê o servidor como fora, mas a sessão continua: um servidor travado que volta segue mandando para o mesmo monitor. Só depois de 30 s calado a ponte manda `(dispinit)` de novo, porque com `max_monitors=-1` cada `(dispinit)` cria mais um monitor (`src/stadium.cpp:2790`). Uma sessão nova de servidor aparece para a página como `session` maior no status.
 
 Na página:
 
-- O worker que já lia arquivo ganha um modo incremental com o mesmo parser. A cada 100 ms ele manda os quadros novos ao thread principal por transferência. As colunas dobram de tamanho até 40 mil quadros; ao vivo, chegar no limite encerra a sessão com aviso.
+- O worker que já lia arquivo ganha um modo incremental com o mesmo parser. A cada 100 ms ele manda os quadros novos ao thread principal por transferência. As colunas dobram de tamanho até 40 mil quadros; ao vivo, chegar no limite encerra a sessão com aviso. As linhas guardadas para salvar o `.rcg` têm teto de 128 MiB ao vivo (uma partida real dá uns 22 MB); a linha fica guardada quando entrou quadro ou quando o parser não a descartou, e não pelo contador de descartes.
 - O quadro segue a ponta com o selo "Ao vivo". Voltar na linha do tempo mostra "Voltar ao vivo". A análise roda no máximo a cada 1,5 s.
 - "Começar partida" manda `(dispstart)`, só quando o servidor espera a saída.
 - Ao cair, a página avisa, mantém os quadros e oferece salvar um `.rcg.gz` v6. As linhas `(pm)` e `(tm)` viram `(playmode)` e `(team)` quando mudam.

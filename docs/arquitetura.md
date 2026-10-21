@@ -15,7 +15,7 @@ O viewer é um site estático. Quem abre escolhe um `.rcg`, o navegador lê, ana
 
 ## Caminho ao vivo
 
-1. **Ponte** (`relay/`, `just relay`). Processo Bun na máquina de quem assiste. Faz `(dispinit version 5)` no rcssserver (padrão `127.0.0.1:6000`) e repassa cada datagrama, sem o `\0` final, como texto num WebSocket em `127.0.0.1:6100`. Uma sessão de monitor serve todas as abas; aba que chega tarde recebe parâmetros, logos e o último quadro. Da página só passam `(dispstart)` e `(dispbye)`, inteiros e com limite de frequência. `(dispstart)` vai ao servidor só com o jogo esperando a saída; `(dispbye)` fecha só a aba que mandou, e a ponte sai do servidor quando a última aba sai. O `Origin` do handshake precisa ser o viewer, uma prévia do Pages ou um servidor de dev local. Status sai em JSON, uma linha por evento.
+1. **Ponte** (`relay/`, `just relay`). Processo Bun na máquina de quem assiste. Faz `(dispinit version 5)` no rcssserver (padrão `127.0.0.1:6000`) e repassa cada datagrama, sem o `\0` final, como texto num WebSocket em `127.0.0.1:6100`. Uma sessão de monitor serve todas as abas; aba que chega tarde recebe parâmetros, logos e o último quadro. A página só pode mandar `(dispstart)` e `(dispbye)`, inteiros e com um limite de frequência comum a todas as conexões, até 16 páginas. `(dispstart)` vai ao servidor só com o jogo esperando a saída; `(dispbye)` fecha só a aba que mandou, e a ponte sai do servidor quando a última aba sai. O `Origin` do handshake precisa ser o viewer, uma prévia do Pages ou um servidor de dev local. A ponte só ouve o servidor: antes da resposta aceita só `(server_param` do endereço dele e depois só a porta dedicada. Sem resposta, repete o `(dispinit)` com espera dobrando até 16 s e desiste depois de 8 tentativas. Status sai em JSON, uma linha por evento.
 2. **Origem** (`src/rcg/source.ts`). Endereço `ws://` de loopback ou `wss://`, no campo "Ao vivo" da tela inicial ou com `?live=`.
 3. **Worker** (`live.ts`, `live-session.ts`, `live-match.ts`). O mesmo worker e o mesmo parser do arquivo, em modo incremental: a cada 100 ms os quadros novos vão ao thread principal por transferência, e as colunas crescem dobrando até o limite de 40 mil quadros.
 4. **Estado** (`src/player/live-actions.ts`). O quadro segue a ponta enquanto ninguém volta na linha do tempo. A análise roda de novo no máximo a cada 1,5 s. Quando a ponte ou o servidor caem, a store guarda o motivo e os quadros ficam.
@@ -47,7 +47,7 @@ rcg → analysis → render → player → components, routes
 ## Endereços
 
 - `?url=https://…/partida.rcg.gz` abre o log ao entrar.
-- `?live=ws://127.0.0.1:6100` conecta na ponte ao entrar. Só aceita `ws://` em `127.0.0.1` ou `localhost`, ou `wss://`.
+- `?live=ws://127.0.0.1:6100` preenche o campo da ponte; a conexão espera o clique em "Conectar". Só aceita `ws://` em `127.0.0.1` ou `localhost`, ou `wss://`.
 - `#t=1234` pula para o ciclo 1234 depois de ler. Ao pausar, o viewer escreve o ciclo atual no `#t=`, então copiar o endereço compartilha o lance.
 - O `#t=` da chegada vale só para o primeiro log. Cada log aberto depois reescreve o endereço inteiro: `?url=` só quando veio da rede, sem `#t=`. Voltar para a tela inicial limpa os dois.
 
