@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 
+import { frameBytes } from '@/test/frame-bytes'
 import { asMonitorLines } from '@/test/monitor-lines'
 import { showLine } from '@/test/rcg-builder'
 
@@ -18,6 +19,11 @@ import type { LiveReply } from './protocol'
 
 const FIXTURE = join(import.meta.dir, 'fixtures', 'rcss2d-mirror-300.rcg.gz')
 const fixtureText = gunzipSync(readFileSync(FIXTURE)).toString('utf8')
+const STREAM = join(import.meta.dir, 'fixtures', 'rcss2d-mirror-live-215.txt.gz')
+const streamLines = gunzipSync(readFileSync(STREAM))
+  .toString('utf8')
+  .split('\n')
+  .filter((line) => line !== '')
 const UP = '{"relay":"status","server":"up","session":1}'
 
 class FakeSocket extends EventTarget implements LiveSocket {
@@ -109,6 +115,30 @@ describe('LiveSession', () => {
     expect(saved.playmodes).toEqual(original.playmodes)
     expect(saved.scores).toEqual(original.scores.slice(0, 1))
     expect(saved.serverParams).toEqual(original.serverParams)
+  })
+
+  test('saves a real stream with two teams as a .rcg that reads back to the same match', async () => {
+    const { socket, replies, session } = start()
+    socket.open()
+    socket.deliver(UP)
+    for (const line of streamLines) socket.deliver(line)
+    session.flush()
+    const live = new LiveMatch()
+    let shown = null
+    for (const reply of replies) {
+      if (reply.kind === 'live-delta') shown = live.apply(reply.delta) ?? shown
+    }
+    const file = await session.save()
+    if (file === null || shown === null) throw new Error('nothing arrived')
+    const saved = parseRcgText(
+      gunzipSync(new Uint8Array(await file.arrayBuffer())).toString('utf8'),
+    )
+    expect(saved.skippedLines).toBe(0)
+    expect(frameBytes(saved.frames)).toEqual(frameBytes(shown.frames))
+    expect(saved.playmodes).toEqual(shown.playmodes)
+    expect([saved.leftName, saved.rightName]).toEqual(['left', 'right'])
+    expect(saved.messages).toEqual(shown.messages)
+    expect(saved.playerTypes).toEqual(shown.playerTypes)
   })
 
   test('keeps every show line in the save once the play mode changes pass the event limit', async () => {

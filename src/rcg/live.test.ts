@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 
+import { frameBytes } from '@/test/frame-bytes'
 import { asMonitorLines } from '@/test/monitor-lines'
 import { rcgText, showLine } from '@/test/rcg-builder'
 
@@ -15,6 +16,12 @@ import type { Match } from './types'
 
 const FIXTURE = join(import.meta.dir, 'fixtures', 'rcss2d-mirror-300.rcg.gz')
 const fixtureText = gunzipSync(readFileSync(FIXTURE)).toString('utf8')
+/** What the relay passed on from a real 19.0.0 server with two teams on the field, trimmed. */
+const STREAM = join(import.meta.dir, 'fixtures', 'rcss2d-mirror-live-215.txt.gz')
+const streamLines = gunzipSync(readFileSync(STREAM))
+  .toString('utf8')
+  .split('\n')
+  .filter((line) => line !== '')
 function drained(parser: RcgParser): MatchDelta {
   const delta = parser.drain()
   if (delta === null) throw new Error('nothing to drain')
@@ -52,6 +59,28 @@ describe('monitor parser', () => {
     expect(finished.leftName).toBe(file.leftName)
     expect(finished.serverParams).toEqual(file.serverParams)
     expect(finished.playerTypes).toHaveLength(file.playerTypes.length)
+  })
+
+  test('reads a real monitor stream from a match with two teams', () => {
+    const { parser, match } = feedMonitor(streamLines)
+    const finished = parser.finish()
+    expect(finished.skippedLines).toBe(0)
+    expect([finished.leftName, finished.rightName]).toEqual(['left', 'right'])
+    expect(finished.playerTypes).toHaveLength(18)
+    expect(finished.messages).toHaveLength(22)
+    expect(finished.playmodes.map((change) => [change.cycle, PLAYMODES[change.mode]])).toEqual([
+      [0, 'before_kick_off'],
+      [1, 'kick_off_l'],
+      [91, 'play_on'],
+      [154, 'foul_charge_r'],
+      [155, 'free_kick_l'],
+      [193, 'play_on'],
+      [200, 'before_kick_off'],
+      [201, 'kick_off_r'],
+    ])
+    expect(finished.frames.count).toBe(218)
+    expect(finished.frames.cycle[finished.frames.count - 1]).toBe(215)
+    expect(match === null ? null : frameBytes(match.frames)).toEqual(frameBytes(finished.frames))
   })
 
   test('keeps one frame while the clock waits before the kick-off', () => {
