@@ -34,9 +34,9 @@ export interface KeyPress {
   altKey: boolean
 }
 
-/** One row of the help sheet. */
+/** One row of the help sheet: the combos that do it, each combo the keys pressed together. */
 export interface Shortcut {
-  keys: string
+  keys: readonly (readonly string[])[]
   label: string
 }
 
@@ -88,17 +88,26 @@ export function keyAction(press: KeyPress): KeyAction | null {
 
 /** The help sheet, in the order people look for things. */
 export const SHORTCUTS: readonly Shortcut[] = [
-  { keys: 'Espaço ou K', label: 'Reproduzir ou pausar' },
-  { keys: '← →', label: 'Um quadro' },
-  { keys: 'Shift ← →', label: `${LONG_STEP_SECONDS} segundos` },
-  { keys: '[ ]', label: 'Mais devagar, mais rápido' },
-  { keys: 'E, Shift E', label: 'Próximo lance, lance anterior' },
-  { keys: 'G', label: 'Próximo gol' },
-  { keys: 'Home End', label: 'Começo e fim' },
-  { keys: '+ − 0', label: 'Zoom e enquadrar o campo' },
-  { keys: 'F', label: 'Seguir a bola' },
-  { keys: 'T V O H S', label: 'Rastros, visão, impedimento, calor, fôlego' },
-  { keys: 'I', label: 'Mostrar ou esconder o painel' },
-  { keys: 'Esc', label: 'Soltar o jogador escolhido' },
-  { keys: '?', label: 'Esta lista' },
+  { keys: [['Espaço'], ['K']], label: 'Reproduzir ou pausar' },
+  { keys: [['←'], ['→']], label: 'Um quadro' },
+  {
+    keys: [
+      ['Shift', '←'],
+      ['Shift', '→'],
+    ],
+    label: `${LONG_STEP_SECONDS} segundos`,
+  },
+  { keys: [['['], [']']], label: 'Mais devagar, mais rápido' },
+  { keys: [['E'], ['Shift', 'E']], label: 'Próximo lance, lance anterior' },
+  { keys: [['G']], label: 'Próximo gol' },
+  { keys: [['Home'], ['End']], label: 'Começo e fim' },
+  { keys: [['+'], ['−'], ['0']], label: 'Zoom e enquadrar o campo' },
+  { keys: [['F']], label: 'Seguir a bola' },
+  {
+    keys: [['T'], ['V'], ['O'], ['H'], ['S']],
+    label: 'Rastros, visão, impedimento, calor, fôlego',
+  },
+  { keys: [['I']], label: 'Mostrar ou esconder o painel' },
+  { keys: [['Esc']], label: 'Soltar o jogador escolhido' },
+  { keys: [['?']], label: 'Esta lista' },
 ]
