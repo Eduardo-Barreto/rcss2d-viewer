@@ -124,6 +124,17 @@ describe('relay', () => {
     expect(fake.monitors()).toBe(0)
   })
 
+  test('gives a tab that comes after the last one left nothing of the old session', async () => {
+    const { relay: running } = await start()
+    const first = connect(running.port)
+    await until(() => shows(first).length >= 20)
+    first.socket.close()
+    await until(() => events.some((event) => event.event === 'monitor-close'))
+    const second = connect(running.port)
+    await until(() => shows(second).length >= 1)
+    expect(shows(second)[0]).toStartWith('(show 1 ')
+  })
+
   test('reconnects when the server comes back', async () => {
     const { server: fake, relay: running } = await start()
     const tab = connect(running.port)

@@ -122,6 +122,7 @@ class MonitorLink {
     if (this.up) this.send(BYE, this.serverPort)
     this.socket.close()
     this.socket = null
+    this.forget()
     this.setUp(false)
     this.log({ event: 'monitor-close' })
   }
@@ -160,12 +161,17 @@ class MonitorLink {
     this.onLine(line)
   }
 
-  private startSession(): void {
-    this.session++
+  /** Drops what a late page would get: it belongs to a session that is over. */
+  private forget(): void {
     this.params = []
     this.graphics = []
     this.lastShow = null
     this.mode = -1
+  }
+
+  private startSession(): void {
+    this.session++
+    this.forget()
     this.log({ event: 'session', session: this.session })
     this.onStatus()
   }
