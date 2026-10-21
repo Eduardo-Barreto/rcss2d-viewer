@@ -32,14 +32,14 @@ function Keys({ shortcut }: { shortcut: Shortcut }) {
 export function KeysFigure() {
   return (
     <figure className="flex flex-col gap-3">
-      <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 rounded-[18px] bg-card px-5 py-3 text-[13px] shadow-island">
+      <dl className="flex flex-col rounded-[18px] bg-card px-5 py-3 text-[13px] shadow-island">
         {SHORTCUTS.map((shortcut) => (
           <div
-            className="col-span-2 grid grid-cols-subgrid items-center border-b border-border py-2 last:border-b-0"
+            className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-border py-2 last:border-b-0"
             key={shortcut.label}
           >
             <dt>{shortcut.label}</dt>
-            <dd>
+            <dd className="ml-auto">
               <Keys shortcut={shortcut} />
             </dd>
           </div>
@@ -56,7 +56,7 @@ export function LinkFigure() {
     <figure className="flex flex-col gap-3">
       <div className="flex items-center gap-2 rounded-[14px] bg-card px-3 py-2.5 shadow-island">
         <Link2 aria-hidden className="size-4 flex-none text-muted-foreground" />
-        <code className="min-w-0 flex-1 overflow-x-auto font-mono text-[12px] whitespace-nowrap">
+        <code className="min-w-0 flex-1 font-mono text-[12px] leading-5 break-all md:overflow-x-auto md:break-normal md:whitespace-nowrap">
           {COPY.link.address.split('#')[0]}
           <mark className="rounded-[4px] bg-foreground px-1 text-background">
             #{COPY.link.address.split('#')[1]}
