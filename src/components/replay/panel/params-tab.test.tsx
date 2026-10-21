@@ -27,4 +27,15 @@ describe('ParamsTab', () => {
     render(<ParamsTab />)
     expect(screen.getByText('Este log não traz parâmetros.')).toBeDefined()
   })
+
+  test('says how many log lines were left out', () => {
+    open('(server_param (ball_decay 0.94))', '(unknown 1)', '(unknown 2)')
+    render(<ParamsTab />)
+    expect(screen.getByText(/2 linhas do log ficaram de fora/)).toBeDefined()
+  })
+
+  test('stays quiet when every line was read', () => {
+    render(<ParamsTab />)
+    expect(screen.queryByText(/ficou de fora|ficaram de fora/)).toBeNull()
+  })
 })

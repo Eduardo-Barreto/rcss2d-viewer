@@ -42,6 +42,16 @@ function Empty({ match, query }: { match: Match; query: string }) {
   )
 }
 
+function Skipped({ lines }: { lines: number }) {
+  if (lines === 0) return null
+  return (
+    <p className="rounded-[8px] bg-muted px-2 py-1.5 text-[12px] text-muted-foreground">
+      {lines === 1 ? '1 linha do log ficou de fora' : `${lines} linhas do log ficaram de fora`}:
+      tipo desconhecido, acima do limite ou cortada no fim.
+    </p>
+  )
+}
+
 /** The server and player parameters written in the log, searchable by name. */
 export function ParamsTab() {
   const match = useReplay((s) => s.match)
@@ -64,6 +74,7 @@ export function ParamsTab() {
         type="search"
         value={query}
       />
+      <Skipped lines={match.skippedLines} />
       <Table params={match.serverParams} query={deferred} title="Servidor" />
       <Table params={match.playerParams} query={deferred} title="Jogadores" />
       <Empty match={match} query={deferred} />
