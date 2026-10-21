@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { analyzeMatch } from '@/analysis/analyze'
 import { parseRcgText } from '@/rcg/parser'
+import { PlayerState } from '@/rcg/types'
 import { rcgText, showLine } from '@/test/rcg-builder'
 
 import { comparisonRows, filterParams, staminaSeries } from './panel-data'
@@ -25,6 +26,31 @@ describe('panel data', () => {
     const run = rows.find((each) => each.label === 'Distância')
     expect(run?.text.l).toBe('3 m')
     expect(rows.find((each) => each.label === 'Passes certos')?.text.r).toBe('0/0')
+  })
+
+  test('counts every touch of the ball, not just kicks', () => {
+    const tackled = parseRcgText(
+      rcgText(
+        '(playmode 0 play_on)',
+        showLine(1, [...STILL], [{ side: 'r', unum: 4, x: 0, y: 0, counts: { tackle: 0 } }]),
+        showLine(
+          2,
+          [...STILL],
+          [
+            {
+              side: 'r',
+              unum: 4,
+              x: 0,
+              y: 0,
+              state: PlayerState.STAND | PlayerState.TACKLE,
+              counts: { tackle: 1 },
+            },
+          ],
+        ),
+      ),
+    )
+    const rows = comparisonRows(analyzeMatch(tackled))
+    expect(rows.find((each) => each.label === 'Toques na bola')?.r).toBe(1)
   })
 
   test('thins the stamina series and skips empty slots', () => {

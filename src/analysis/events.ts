@@ -1,4 +1,4 @@
-import { PLAYMODES, playModeSide } from '@/rcg/playmodes'
+import { PLAYMODES, playModeId, playModeSide } from '@/rcg/playmodes'
 import {
   COUNTERS,
   COUNTER_INDEX,
@@ -16,7 +16,7 @@ export type EventKind =
   | 'tackle'
   | 'tackleMiss'
   | 'catch'
-  | 'catchMiss'
+  | 'punch'
   | 'fouled'
   | 'yellow'
   | 'red'
@@ -103,18 +103,56 @@ function push(step: SlotStep, kind: EventKind): void {
 }
 
 /**
+ * Play modes where a successful tackle returns before it reaches the ball
+ * (rcssserver `src/player.cpp:2127-2145`).
+ */
+const TACKLE_DEAD_MODES = new Set(
+  [
+    'before_kick_off',
+    'goal_l',
+    'goal_r',
+    'offside_l',
+    'offside_r',
+    'illegal_defense_l',
+    'illegal_defense_r',
+    'foul_charge_l',
+    'foul_charge_r',
+    'foul_push_l',
+    'foul_push_r',
+    'back_pass_l',
+    'back_pass_r',
+    'free_kick_fault_l',
+    'free_kick_fault_r',
+    'time_over',
+  ].map((name) => playModeId(name)),
+)
+
+/**
+ * A tackle that took the ball, or `tackleMiss`. `TACKLE_FAULT` marks one that missed; one in a
+ * stopped mode never reaches the ball. The command ran under the previous frame's mode.
+ */
+function tackleKind(step: SlotStep, state: number): EventKind {
+  if ((state & PlayerState.TACKLE_FAULT) !== 0) return 'tackleMiss'
+  const mode = step.match.frames.playmode[step.frame - 1] ?? 0
+  return TACKLE_DEAD_MODES.has(mode) ? 'tackleMiss' : 'tackle'
+}
+
+/**
  * Commands that ran between two frames, from the `(c ...)` counters. The server bumps the kick
- * counter only when the kick reached the ball (rcssserver `src/player.cpp:1519`) and the tackle
- * counter on every try (`src/player.cpp:2079`); `TACKLE_FAULT` marks a tackle that missed.
+ * counter only when the kick reached the ball (rcssserver `Player::kick`, `src/player.cpp:1416`,
+ * and `Player::doLongKick`, `src/player.cpp:1519`) and the tackle counter on every try
+ * (`src/player.cpp:2079`). The catch counter goes up only past the reach checks
+ * (`src/player.cpp:1699`); with `CATCH_FAULT` set it was a probabilistic failure and the goalie
+ * punched the ball (`Stadium::ballPunched`, `src/player.cpp:1696`).
  */
 function commandEvents(step: SlotStep, prevK: number, k: number): void {
   const state = step.match.frames.state[k] ?? 0
   if (counterDelta(step.match, prevK, k, COUNTER_INDEX.kick) > 0) push(step, 'kick')
   if (counterDelta(step.match, prevK, k, COUNTER_INDEX.tackle) > 0) {
-    push(step, (state & PlayerState.TACKLE_FAULT) === 0 ? 'tackle' : 'tackleMiss')
+    push(step, tackleKind(step, state))
   }
   if (counterDelta(step.match, prevK, k, COUNTER_INDEX.catch) > 0) {
-    push(step, (state & PlayerState.CATCH_FAULT) === 0 ? 'catch' : 'catchMiss')
+    push(step, (state & PlayerState.CATCH_FAULT) === 0 ? 'catch' : 'punch')
   }
 }
 

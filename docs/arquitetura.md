@@ -25,7 +25,7 @@ rcg → analysis → render → player → components, routes
 
 ## De onde vêm os números
 
-- **Toques**: os contadores de comando `(c ...)` do quadro. O servidor só soma o chute que pegou na bola (`src/player.cpp:1519`) e soma todo carrinho tentado (`src/player.cpp:2079`); o flag `TACKLE_FAULT` marca o carrinho que errou.
+- **Toques**: os contadores de comando `(c ...)` do quadro. O servidor só soma o chute que pegou na bola (`Player::kick`, `src/player.cpp:1416`, e `Player::doLongKick`, `src/player.cpp:1519`) e soma todo carrinho tentado (`src/player.cpp:2079`). O flag `TACKLE_FAULT` marca o carrinho que errou; carrinho com o jogo parado (falta, impedimento, antes da saída e afins) também não pega a bola (`src/player.cpp:2127-2145`). A defesa do goleiro só soma depois de passar das checagens de alcance (`src/player.cpp:1699`); com `CATCH_FAULT` ela falhou no sorteio e o goleiro deu um soco na bola (`src/player.cpp:1696`), o que conta como toque. "Toques na bola" soma chutes, carrinhos que pegaram a bola, defesas e socos.
 - **Posse**: dono da bola é quem tocou por último. A posse é a fração dos quadros em `play_on` de cada lado.
 - **Passe**: chute seguido de toque de um companheiro. Chute seguido de toque do mesmo jogador é condução.
 - **Chute a gol**: chute rumo ao gol atacado que, rolando livre com o `ball_decay` do log, cruzaria a linha de fundo a até 3 m da trave. O alcance máximo é `v / (1 - decay)` (`MPObject::_inc`, `src/object.cpp:623`).

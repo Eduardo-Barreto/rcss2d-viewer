@@ -2,10 +2,12 @@ import { PLAY_ON } from '@/rcg/playmodes'
 import { type Match, SLOT_COUNT, type Side } from '@/rcg/types'
 
 import { type MatchEvent, type EventKind } from './events'
-import type { Pass, Shot } from './touches'
+import { type Pass, type Shot, isTouch } from './touches'
 
 /** Totals for one player or one team. */
 export interface Tally {
+  /** Kicks, won tackles, catches and punches: every time the player moved the ball. */
+  touches: number
   kicks: number
   passes: number
   passesComplete: number
@@ -15,6 +17,8 @@ export interface Tally {
   tackles: number
   tacklesMissed: number
   catches: number
+  /** Catches that failed and punched the ball away instead. */
+  punches: number
   /** Fouls suffered: the player was frozen by an opponent's foul tackle. */
   fouled: number
   yellow: number
@@ -38,12 +42,14 @@ const EVENT_FIELD: Partial<Record<EventKind, keyof Tally>> = {
   tackle: 'tackles',
   tackleMiss: 'tacklesMissed',
   catch: 'catches',
+  punch: 'punches',
   fouled: 'fouled',
   yellow: 'yellow',
   red: 'red',
 }
 
 const TALLY_FIELDS: readonly (keyof Tally)[] = [
+  'touches',
   'kicks',
   'passes',
   'passesComplete',
@@ -53,6 +59,7 @@ const TALLY_FIELDS: readonly (keyof Tally)[] = [
   'tackles',
   'tacklesMissed',
   'catches',
+  'punches',
   'fouled',
   'yellow',
   'red',
@@ -62,6 +69,7 @@ const TALLY_FIELDS: readonly (keyof Tally)[] = [
 /** A tally with every field at zero. */
 function emptyTally(): Tally {
   return {
+    touches: 0,
     kicks: 0,
     passes: 0,
     passesComplete: 0,
@@ -71,6 +79,7 @@ function emptyTally(): Tally {
     tackles: 0,
     tacklesMissed: 0,
     catches: 0,
+    punches: 0,
     fouled: 0,
     yellow: 0,
     red: 0,
@@ -133,6 +142,7 @@ export function tallyBySlot({ events, passes, shots, goals, distance }: TallyInp
   for (const event of events) {
     const field = EVENT_FIELD[event.kind]
     if (field !== undefined) bump(tallies, event.slot, field)
+    if (isTouch(event.kind)) bump(tallies, event.slot, 'touches')
   }
   for (const pass of passes) {
     if (pass.outcome === 'kept') continue

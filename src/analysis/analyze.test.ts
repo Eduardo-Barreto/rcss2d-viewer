@@ -46,6 +46,14 @@ const tackler = (tackle: number, state: number): PlayerSpec => ({
   state,
   counts: { tackle },
 })
+const keeper = (catches: number, state: number): PlayerSpec => ({
+  side: 'l',
+  unum: 1,
+  x: -50,
+  y: 0,
+  state: PlayerState.STAND | PlayerState.GOALIE | state,
+  counts: { catch: catches },
+})
 const victim = (state: number): PlayerSpec => ({ side: 'l', unum: 7, x: 0, y: 0, state })
 const offender = (state: number): PlayerSpec => ({ side: 'r', unum: 4, x: 1, y: 0, state })
 const defenders = (...xs: number[]): PlayerSpec[] =>
@@ -160,6 +168,36 @@ describe('findEvents', () => {
       ),
     )
     expect(findEvents(match).map((event) => event.kind)).toEqual(['tackle', 'tackleMiss'])
+  })
+
+  test('a tackle under a stopped mode does not take the ball', () => {
+    const won = PlayerState.STAND | PlayerState.TACKLE
+    const match = parseRcgText(
+      rcgText(
+        '(playmode 0 foul_charge_l)',
+        ...frames([STILL, [tackler(0, PlayerState.STAND)]], [STILL, [tackler(1, won)]]),
+        '(playmode 2 play_on)',
+        ...frames([STILL, [tackler(1, PlayerState.STAND)]], [STILL, [tackler(2, won)]]),
+      ),
+    )
+    expect(findEvents(match).map((event) => event.kind)).toEqual([
+      'playmode',
+      'tackleMiss',
+      'tackle',
+    ])
+  })
+
+  test('a failed catch is a punch and counts as a touch', () => {
+    const match = parse(
+      ...frames(
+        [STILL, [keeper(0, 0)]],
+        [STILL, [keeper(1, PlayerState.CATCH)]],
+        [STILL, [keeper(2, PlayerState.CATCH_FAULT)]],
+      ),
+    )
+    expect(findEvents(match).map((event) => event.kind)).toEqual(['catch', 'punch'])
+    const tally = analyzeMatch(match).players[0]
+    expect(tally).toMatchObject({ catches: 1, punches: 1, touches: 2, kicks: 0 })
   })
 
   test('a foul counts for the offender side and a card fires once', () => {

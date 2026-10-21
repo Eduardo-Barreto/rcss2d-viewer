@@ -53,7 +53,7 @@ export function comparisonRows(analysis: Analysis): ComparisonRow[] {
       (tally) => tally.passesComplete,
       (tally) => tally.passes,
     ),
-    row('Toques na bola', teams, (tally) => tally.kicks),
+    row('Toques na bola', teams, (tally) => tally.touches),
     withShare(
       'Desarmes',
       teams,

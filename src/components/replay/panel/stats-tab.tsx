@@ -78,7 +78,7 @@ function Roster({ side }: { side: Side }) {
                 <span className="flex-1 truncate text-muted-foreground">
                   {tally.goals > 0 ? `${tally.goals} gol${tally.goals > 1 ? 's' : ''}` : ''}
                 </span>
-                <span className="font-mono text-[12px] tabular-nums">{tally.kicks}</span>
+                <span className="font-mono text-[12px] tabular-nums">{tally.touches}</span>
                 <span className="w-16 text-right font-mono text-[12px] text-muted-foreground tabular-nums">
                   {distance(tally.distance)}
                 </span>

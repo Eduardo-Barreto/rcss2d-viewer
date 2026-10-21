@@ -1,15 +1,18 @@
 import { PLAY_ON } from '@/rcg/playmodes'
 import { BALL_STRIDE, type Match, type Side } from '@/rcg/types'
 
-import { type MatchEvent, sideOfSlot } from './events'
+import { type EventKind, type MatchEvent, sideOfSlot } from './events'
 import { PITCH_LENGTH, type Physics } from './params'
 
-/** A touch of the ball: a kick, a tackle that won it or a catch. */
+/** Event kinds that touch the ball. */
+export type TouchKind = 'kick' | 'tackle' | 'catch' | 'punch'
+
+/** A touch of the ball: a kick, a tackle that won it, a catch or a goalie's punch. */
 export interface Touch {
   frame: number
   slot: number
   side: Side
-  kind: 'kick' | 'tackle' | 'catch'
+  kind: TouchKind
 }
 
 /** How a kick ended: at a teammate, at an opponent, with the play stopped, or kept. */
@@ -35,18 +38,23 @@ export interface Shot {
   onTarget: boolean
 }
 
-const TOUCH_KINDS = new Set(['kick', 'tackle', 'catch'])
+const TOUCH_KINDS: ReadonlySet<EventKind> = new Set<EventKind>(['kick', 'tackle', 'catch', 'punch'])
+
+/** True when an event of `kind` touched the ball. */
+export function isTouch(kind: EventKind): kind is TouchKind {
+  return TOUCH_KINDS.has(kind)
+}
 /** Meters wide of the posts a kick still counts as a shot. */
 const SHOT_MARGIN = 3
 const HALF = 0.5
 
-/** Kicks, won tackles and catches, in order. */
+/** Kicks, won tackles, catches and punches, in order. */
 export function touchesOf(events: MatchEvent[]): Touch[] {
   const touches: Touch[] = []
   for (const event of events) {
-    if (!TOUCH_KINDS.has(event.kind) || event.slot < 0) continue
-    const kind = event.kind === 'kick' || event.kind === 'tackle' ? event.kind : 'catch'
-    touches.push({ frame: event.frame, slot: event.slot, side: sideOfSlot(event.slot), kind })
+    const { kind, slot } = event
+    if (!isTouch(kind) || slot < 0) continue
+    touches.push({ frame: event.frame, slot, side: sideOfSlot(slot), kind })
   }
   return touches
 }

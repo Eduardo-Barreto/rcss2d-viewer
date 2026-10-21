@@ -17,13 +17,18 @@ const SPARK_HEIGHT = 48
 const DECIMALS = 2
 const DOT = { l: 'bg-(--team-l)', r: 'bg-(--team-r)' } as const
 
+function saves(tally: Tally): string {
+  if (tally.punches === 0) return String(tally.catches)
+  return `${tally.catches} e ${tally.punches} soco${tally.punches > 1 ? 's' : ''}`
+}
+
 const FIELDS: readonly { label: string; read: (tally: Tally) => string }[] = [
   { label: 'Gols', read: (tally) => String(tally.goals) },
   { label: 'Chutes', read: (tally) => `${tally.shotsOnTarget}/${tally.shots} no gol` },
   { label: 'Passes certos', read: (tally) => `${tally.passesComplete}/${tally.passes}` },
-  { label: 'Toques na bola', read: (tally) => String(tally.kicks) },
+  { label: 'Toques na bola', read: (tally) => String(tally.touches) },
   { label: 'Desarmes', read: (tally) => `${tally.tackles} (${tally.tacklesMissed} errados)` },
-  { label: 'Defesas', read: (tally) => String(tally.catches) },
+  { label: 'Defesas', read: saves },
   { label: 'Faltas sofridas', read: (tally) => String(tally.fouled) },
   { label: 'Cartões', read: (tally) => `${tally.yellow} amarelo, ${tally.red} vermelho` },
   { label: 'Corrida', read: (tally) => distance(tally.distance) },
