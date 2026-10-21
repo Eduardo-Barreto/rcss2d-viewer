@@ -5,7 +5,7 @@ set positional-arguments
 
 wrangler := "bunx wrangler@4.151.1"
 project := "rcss2d-viewer"
-site := "https://rcssviewer.barreto.sh"
+site := "https://rcssviewer.tapout.gg"
 
 # List the recipes
 [private]
