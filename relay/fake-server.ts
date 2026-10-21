@@ -24,6 +24,8 @@ export interface FakeServer {
   commands: string[]
   /** How many monitors are being sent to. */
   monitors: () => number
+  /** Stops sending without dropping anyone, like a stalled or paused server, until released. */
+  hold: (holding: boolean) => void
   stop: () => void
 }
 
@@ -51,8 +53,10 @@ function waitingShow(line: string): string {
 export async function startFakeServer(script: FakeServerScript): Promise<FakeServer> {
   const monitors = new Set<Monitor>()
   const commands: string[] = []
+  let holding = false
 
   const step = (monitor: Monitor) => {
+    if (holding) return
     const line = script.lines[monitor.next]
     if (line === undefined) return
     if (monitor.waiting) {
@@ -115,6 +119,9 @@ export async function startFakeServer(script: FakeServerScript): Promise<FakeSer
     port: init.port,
     commands,
     monitors: () => monitors.size,
+    hold(next) {
+      holding = next
+    },
     stop() {
       for (const monitor of monitors) drop(monitor)
       init.close()

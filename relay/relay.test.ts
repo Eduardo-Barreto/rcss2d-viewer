@@ -7,7 +7,7 @@ import { type Relay, type RelayLog, startRelay } from './relay.ts'
 const ORIGIN = 'http://localhost:5173'
 const PARAMS = ['(server_param (half_time 300))', '(player_param (player_types 18))']
 const SHOWS = Array.from({ length: 400 }, (_, cycle) => `(show ${cycle + 1} (pm 2) (tm a b 0 0))`)
-const TIMING = { retryMs: 20, silenceMs: 200 }
+const TIMING = { retryMs: 20, silenceMs: 200, reconnectMs: 600 }
 const WAIT_MS = 3000
 
 let server: FakeServer | null = null
@@ -133,6 +133,39 @@ describe('relay', () => {
     const second = connect(running.port)
     await until(() => shows(second).length >= 1)
     expect(shows(second)[0]).toStartWith('(show 1 ')
+  })
+
+  test('joins the server once when tabs connect at the same time', async () => {
+    const { server: fake, relay: running } = await start()
+    const first = connect(running.port)
+    const tabs = [first, connect(running.port), connect(running.port)]
+    await until(() => tabs.every((tab) => shows(tab).length >= 5))
+    expect(fake.monitors()).toBe(1)
+    const cycles = shows(first).map((line) => line.split(' ')[1])
+    expect(new Set(cycles).size).toBe(cycles.length)
+  })
+
+  test('does not stay on the server when the only tab leaves while joining', async () => {
+    const { server: fake, relay: running } = await start()
+    const tab = connect(running.port)
+    await new Promise((resolve) => tab.socket.addEventListener('open', resolve))
+    tab.socket.close()
+    await Bun.sleep(TIMING.silenceMs)
+    expect(fake.monitors()).toBe(0)
+  })
+
+  test('keeps the session through a stall shorter than the reconnect time', async () => {
+    const { server: fake, relay: running } = await start()
+    const tab = connect(running.port)
+    await until(() => shows(tab).length >= 2)
+    fake.hold(true)
+    await until(() => tab.lines.includes('{"relay":"status","server":"down","session":1}'))
+    const before = shows(tab).length
+    fake.hold(false)
+    await until(() => tab.lines.includes('{"relay":"status","server":"up","session":1}'))
+    await until(() => shows(tab).length > before + 5)
+    expect(fake.monitors()).toBe(1)
+    expect(tab.lines.some((line) => line.includes('"session":2'))).toBe(false)
   })
 
   test('reconnects when the server comes back', async () => {

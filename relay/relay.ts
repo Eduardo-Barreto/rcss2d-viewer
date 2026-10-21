@@ -10,8 +10,14 @@ export type RelayLog = (event: Record<string, unknown>) => void
 export interface RelayTiming {
   /** How often `(dispinit)` is sent until the server answers. */
   retryMs: number
-  /** Silence after which the server counts as gone. */
+  /** Silence after which the server counts as down. Pages hear it; the session stays. */
   silenceMs: number
+  /**
+   * Silence after which the relay gives up on the server's dedicated port and sends
+   * `(dispinit)` again. Kept well above `silenceMs`: a stalled server that comes back keeps
+   * the old monitor, and a fresh `(dispinit)` would add a second one with a new session.
+   */
+  reconnectMs: number
 }
 
 /** A running relay. */
@@ -37,7 +43,7 @@ interface RelayStatus {
 const INIT = '(dispinit version 5)\0'
 const BYE = '(dispbye)\0'
 const TOPIC = 'live'
-const DEFAULT_TIMING: RelayTiming = { retryMs: 1000, silenceMs: 3000 }
+const DEFAULT_TIMING: RelayTiming = { retryMs: 1000, silenceMs: 3000, reconnectMs: 30_000 }
 const MAX_COMMAND_BYTES = 64
 const BACKPRESSURE_BYTES = 4_194_304
 const IDLE_SECONDS = 60
@@ -46,6 +52,8 @@ const COMMAND_REFILL_MS = 1000
 const MAX_STRIKES = 20
 const POLICY_VIOLATION = 1008
 const MAX_CACHED_GRAPHICS = 1024
+/** `server_param`, `player_param` and the player types: 20 lines in rcssserver 19. */
+const MAX_CACHED_PARAMS = 256
 const BEFORE_KICK_OFF = 1
 const SHOW_MODE = /^\(show \d+ \(pm (?<mode>\d+)\)/
 
@@ -67,6 +75,9 @@ class MonitorLink {
   up = false
   mode = -1
   private socket: udp.Socket<'buffer'> | null = null
+  private opening: Promise<void> | null = null
+  private wanted = false
+  private answered = false
   private serverPort: number
   private lastData = 0
   private timer: ReturnType<typeof setInterval> | null = null
@@ -99,27 +110,42 @@ class MonitorLink {
     return [...this.params, ...this.graphics, ...(this.lastShow === null ? [] : [this.lastShow])]
   }
 
+  /** Joins the server as a monitor. Safe to call again while a first call is still opening. */
   async open(): Promise<void> {
+    this.wanted = true
+    this.opening ??= this.bind()
+    await this.opening
+  }
+
+  private async bind(): Promise<void> {
     if (this.socket !== null) return
-    this.socket = await Bun.udpSocket({
+    const socket = await Bun.udpSocket({
       hostname: this.options.server.host.includes(':') ? '::' : '0.0.0.0',
       socket: {
         data: (_socket, buffer, port, address) => this.receive(buffer, port, address),
         error: () => this.setUp(false),
       },
     })
+    this.opening = null
+    if (!this.wanted) {
+      socket.close()
+      return
+    }
+    this.socket = socket
     this.serverPort = this.options.server.port
-    this.log({ event: 'monitor-open', localPort: this.socket.port })
+    this.answered = false
+    this.log({ event: 'monitor-open', localPort: socket.port })
     this.tick()
     this.timer = setInterval(() => this.tick(), this.timing.retryMs)
   }
 
   /** Leaves the server with `(dispbye)` and closes the socket. */
   close(): void {
+    this.wanted = false
     if (this.timer !== null) clearInterval(this.timer)
     this.timer = null
     if (this.socket === null) return
-    if (this.up) this.send(BYE, this.serverPort)
+    if (this.answered) this.send(BYE, this.serverPort)
     this.socket.close()
     this.socket = null
     this.forget()
@@ -133,15 +159,27 @@ class MonitorLink {
   }
 
   private tick(): void {
-    if (this.up && Date.now() - this.lastData > this.timing.silenceMs) {
+    const silence = Date.now() - this.lastData
+    if (this.up && silence > this.timing.silenceMs) {
       this.setUp(false)
       this.log({ event: 'server-lost' })
     }
-    if (!this.up) this.send(INIT, this.options.server.port)
+    if (this.answered && silence > this.timing.reconnectMs) {
+      this.send(BYE, this.serverPort)
+      this.answered = false
+      this.serverPort = this.options.server.port
+      this.log({ event: 'server-reinit' })
+    }
+    if (!this.answered) this.send(INIT, this.options.server.port)
   }
 
+  /** Sends one datagram. A port that is gone fails right here (ECONNREFUSED): the server is down. */
   private send(text: string, port: number): void {
-    this.socket?.send(text, port, this.options.server.host)
+    try {
+      this.socket?.send(text, port, this.options.server.host)
+    } catch {
+      this.setUp(false)
+    }
   }
 
   private receive(buffer: Buffer, port: number, address: string): void {
@@ -155,6 +193,7 @@ class MonitorLink {
       return
     }
     if (line.startsWith('(server_param')) this.startSession()
+    this.answered = true
     this.serverPort = port
     this.setUp(true)
     this.remember(line)
@@ -181,7 +220,7 @@ class MonitorLink {
     else if (line.startsWith('(msg ') && line.includes('team_graphic_')) {
       if (this.graphics.length < MAX_CACHED_GRAPHICS) this.graphics.push(line)
     } else if (line.startsWith('(server_param') || line.startsWith('(player_')) {
-      this.params.push(line)
+      if (this.params.length < MAX_CACHED_PARAMS) this.params.push(line)
     }
   }
 
