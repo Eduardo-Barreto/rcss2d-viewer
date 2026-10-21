@@ -93,6 +93,7 @@ function lastFrame(match: Match | null): number {
 }
 
 function clampFrame(match: Match | null, frame: number): number {
+  if (!Number.isFinite(frame)) return 0
   return Math.min(Math.max(frame, 0), lastFrame(match))
 }
 
@@ -155,7 +156,7 @@ export const useReplay = create<ReplayState>()(
       advance(ms) {
         const { match, analysis, frame, speed, playing } = get()
         if (!playing || match === null || analysis === null) return
-        const next = frame + (ms / analysis.physics.stepMs) * speed
+        const next = clampFrame(match, frame + (ms / analysis.physics.stepMs) * speed)
         const last = lastFrame(match)
         set(next >= last ? { frame: last, playing: false } : { frame: next })
       },

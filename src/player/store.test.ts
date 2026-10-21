@@ -43,6 +43,14 @@ describe('replay store', () => {
     expect(replay()).toMatchObject({ frame: FRAMES - 1, playing: false })
   })
 
+  test('never moves before the first frame or to a non-number', () => {
+    replay().togglePlay()
+    replay().advance(-1000)
+    expect(replay().frame).toBe(0)
+    replay().seek(Number.NaN)
+    expect(replay().frame).toBe(0)
+  })
+
   test('plays again from the start once at the end', () => {
     replay().seek(99)
     expect(replay().frame).toBe(FRAMES - 1)
