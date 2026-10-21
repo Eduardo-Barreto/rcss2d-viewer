@@ -31,6 +31,8 @@ export interface SceneInput {
   selected: number
   hovered: number
   heatmap: Heatmap | null
+  /** Smallest player radius on screen, in CSS pixels. Defaults to the app's 9 px. */
+  minPlayerPx?: number
 }
 
 const HALF = 0.5
@@ -169,7 +171,8 @@ function drawWorld(ctx: CanvasRenderingContext2D, input: SceneInput, poses: Play
 }
 
 function playerRadius(input: SceneInput): number {
-  return Math.max(input.analysis.physics.playerSize * input.camera.scale, MIN_PLAYER_PX)
+  const floor = input.minPlayerPx ?? MIN_PLAYER_PX
+  return Math.max(input.analysis.physics.playerSize * input.camera.scale, floor)
 }
 
 function drawKickable(

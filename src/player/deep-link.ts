@@ -11,7 +11,8 @@ export interface LinkSource {
   live: string | null
 }
 
-const CYCLE = /^#t=(?<cycle>\d{1,6})$/
+/** A `#t=<cycle>` fragment, the cycle at most six digits. */
+export const CYCLE_HASH = /^#t=(?<cycle>\d{1,6})$/
 
 function param(params: URLSearchParams, name: string): string | null {
   const value = params.get(name)
@@ -21,7 +22,7 @@ function param(params: URLSearchParams, name: string): string | null {
 /** Reads `?url=<https log>`, `?live=<relay>` and `#t=<cycle>` from the address. */
 export function parseDeepLink(search: string, hash: string): DeepLink {
   const params = new URLSearchParams(search)
-  const cycle = CYCLE.exec(hash)?.groups?.cycle
+  const cycle = CYCLE_HASH.exec(hash)?.groups?.cycle
   return {
     url: param(params, 'url'),
     live: param(params, 'live'),

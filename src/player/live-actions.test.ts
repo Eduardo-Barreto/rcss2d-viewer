@@ -164,4 +164,29 @@ describe('live replay', () => {
     expect(fake?.stopped).toBe(true)
     expect(replay().live).toBeNull()
   })
+
+  test('showing another match leaves the session and ignores what it still sends', () => {
+    connect()
+    handlers().delta(frames(1, 5))
+    const shown = replay().match
+    if (shown === null) throw new Error('no match')
+    replay().show(shown, 'lance.rcg')
+    expect(fake?.stopped).toBe(true)
+    handlers().open('up')
+    handlers().delta(frames(6, 9))
+    handlers().end('closed')
+    expect(replay()).toMatchObject({ status: 'ready', name: 'lance.rcg', live: null })
+    expect(replay().match).toBe(shown)
+  })
+
+  test('opening a file leaves the session before reading it', async () => {
+    connect()
+    handlers().delta(frames(1, 5))
+    const reading = replay().open({ kind: 'file', file: new Blob(['ULG6\n']), name: 'a.rcg' })
+    expect(fake?.stopped).toBe(true)
+    handlers().delta(frames(6, 8))
+    expect(replay()).toMatchObject({ status: 'loading', name: 'a.rcg', live: null, match: null })
+    await reading
+    expect(replay().live).toBeNull()
+  })
 })

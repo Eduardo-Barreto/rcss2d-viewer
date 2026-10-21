@@ -1,7 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { ReplayView } from '@/components/replay/replay-view'
+import { Landing } from '@/components/landing/landing'
+import { APP_PATH, forwardsToApp } from '@/player/app-route'
 
 export const Route = createFileRoute('/')({
-  component: ReplayView,
+  beforeLoad: ({ location }) => {
+    if (forwardsToApp(location.searchStr, location.hash)) {
+      throw redirect({ to: APP_PATH, search: location.search, hash: location.hash, replace: true })
+    }
+  },
+  component: Landing,
 })

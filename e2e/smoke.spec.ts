@@ -4,7 +4,7 @@ import { FIXTURE, openFixture } from './fixture.ts'
 
 test.describe('Replay', () => {
   test('abre a tela inicial', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/app')
     await expect(page.getByRole('heading', { name: 'rcssviewer' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Escolher arquivo' })).toBeVisible()
   })
@@ -17,7 +17,7 @@ test.describe('Replay', () => {
   })
 
   test('recusa endereço que não é https', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/app')
     await page.getByLabel('Endereço https de um .rcg').fill('http://example.com/a.rcg')
     await page.getByRole('button', { name: 'Abrir' }).click()
     const alert = page.getByRole('alert')
@@ -33,7 +33,7 @@ test.describe('Replay', () => {
   })
 
   test('explica quando o arquivo não é um replay', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/app')
     await page.getByLabel('Arquivo .rcg').setInputFiles({
       name: 'notas.rcg',
       mimeType: 'text/plain',
@@ -84,19 +84,29 @@ test.describe('Replay', () => {
 })
 
 test.describe('Endereço', () => {
-  test('pula para o ciclo do #t= só no primeiro log e limpa o endereço no seguinte', async ({
-    page,
-  }) => {
+  test.beforeEach(async ({ page }) => {
     await page.route('https://logs.example/**', (route) =>
       route.fulfill({ path: FIXTURE, headers: { 'access-control-allow-origin': '*' } }),
     )
+  })
+
+  test('leva o link antigo na raiz para o app sem perder o ciclo', async ({ page }) => {
     await page.goto('/?url=https%3A%2F%2Flogs.example%2Fjogo.rcg.gz#t=120')
     const slider = page.getByRole('slider', { name: 'Posição na partida' })
     await expect(slider).toHaveAttribute('aria-valuetext', /ciclo 120$/)
-    await expect(page).toHaveURL(/\?url=https%3A%2F%2Flogs\.example%2Fjogo\.rcg\.gz#t=120$/)
+    await expect(page).toHaveURL(/\/app\?url=https%3A%2F%2Flogs\.example%2Fjogo\.rcg\.gz#t=120$/)
+  })
+
+  test('pula para o ciclo do #t= só no primeiro log e limpa o endereço no seguinte', async ({
+    page,
+  }) => {
+    await page.goto('/app?url=https%3A%2F%2Flogs.example%2Fjogo.rcg.gz#t=120')
+    const slider = page.getByRole('slider', { name: 'Posição na partida' })
+    await expect(slider).toHaveAttribute('aria-valuetext', /ciclo 120$/)
+    await expect(page).toHaveURL(/\/app\?url=https%3A%2F%2Flogs\.example%2Fjogo\.rcg\.gz#t=120$/)
 
     await page.getByRole('button', { name: 'Abrir outra partida' }).click()
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page).toHaveURL(/\/app$/)
     await page.getByLabel('Arquivo .rcg').setInputFiles(FIXTURE)
     await expect(slider).toHaveAttribute('aria-valuenow', '0')
     expect(new URL(page.url()).search).toBe('')

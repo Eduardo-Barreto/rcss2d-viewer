@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 import { LIVE_RELAY_PORT } from './e2e/live-port.ts'
 
-const port = 5183
+const DEFAULT_PORT = 5183
+const port = Number(process.env.E2E_PORT ?? DEFAULT_PORT)
 const baseURL = `http://localhost:${port}`
 
 export default defineConfig({

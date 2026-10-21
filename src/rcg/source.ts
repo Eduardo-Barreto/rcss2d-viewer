@@ -6,18 +6,29 @@ const MAX_INPUT_BYTES = 268_435_456
 /** Where a log comes from: a local file or an `https` URL. */
 export type LogSource = { kind: 'file'; file: Blob; name: string } | { kind: 'url'; url: string }
 
+/** Origin of the page or worker running, or null outside a browser. */
+function ownOrigin(): string | null {
+  if (!('location' in globalThis)) return null
+  const { origin } = globalThis.location
+  return origin === 'null' ? null : origin
+}
+
 /**
- * Checks a remote log address. Only `https` is allowed, so a link can never point the viewer at
- * `file:`, `data:`, `javascript:` or a plain-text intranet address.
+ * Checks a log address. Another origin must be `https`, so a link can never point the viewer at
+ * `file:`, `data:`, `javascript:` or a plain-text intranet address. The viewer's own origin is
+ * also accepted over `http`, which only a local dev or preview server serves; a relative path
+ * resolves against it.
+ * @param origin the viewer's origin, read from the running page by default
  */
-export function checkLogUrl(raw: string): URL {
+export function checkLogUrl(raw: string, origin: string | null = ownOrigin()): URL {
   let url: URL
   try {
-    url = new URL(raw)
+    url = new URL(raw, origin ?? undefined)
   } catch {
     throw new RcgError('Endereço inválido.')
   }
-  if (url.protocol !== 'https:') throw new RcgError('Só aceito endereços https.')
+  const own = origin !== null && url.origin === origin
+  if (url.protocol !== 'https:' && !own) throw new RcgError('Só aceito endereços https.')
   if (url.username !== '' || url.password !== '') {
     throw new RcgError('O endereço não pode ter usuário e senha.')
   }

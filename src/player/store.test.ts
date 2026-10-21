@@ -92,6 +92,13 @@ describe('replay store', () => {
     expect(replay().overlays.heatmap).toBe(false)
   })
 
+  test('showing a match drops a read still in flight', async () => {
+    const reading = replay().open({ kind: 'file', file: new Blob([rcgText()]), name: 'lento.rcg' })
+    replay().show(match, 'lance.rcg')
+    await reading
+    expect(replay()).toMatchObject({ status: 'ready', name: 'lance.rcg', match })
+  })
+
   test('closing returns to the empty state', () => {
     replay().close()
     expect(replay()).toMatchObject({ status: 'empty', match: null, frame: 0 })
