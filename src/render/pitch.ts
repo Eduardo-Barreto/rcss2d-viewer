@@ -97,6 +97,20 @@ function goals(ctx: CanvasRenderingContext2D, goalWidth: number, palette: Palett
   ctx.stroke()
 }
 
+function grass(ctx: CanvasRenderingContext2D, scale: number) {
+  const hx = PITCH_LENGTH * HALF + PITCH_MARGIN
+  const hy = PITCH_WIDTH * HALF + PITCH_MARGIN
+  ctx.beginPath()
+  ctx.roundRect(-hx, -hy, hx * 2, hy * 2, GRASS_CORNER_PX / scale)
+}
+
+/** Clips what follows to the grass, so long overlays stop at its edge. Pair with `restore()`. */
+export function clipToGrass(ctx: CanvasRenderingContext2D, scale: number): void {
+  ctx.save()
+  grass(ctx, scale)
+  ctx.clip()
+}
+
 /**
  * Draws the grass, the lines and the goals in world meters. `ctx` must already carry the world
  * transform; `scale` is pixels per meter, so line widths stay the same on screen at any zoom.
@@ -108,11 +122,8 @@ export function drawPitch(
   palette: Palette,
 ) {
   const px = 1 / scale
-  const hx = PITCH_LENGTH * HALF + PITCH_MARGIN
-  const hy = PITCH_WIDTH * HALF + PITCH_MARGIN
   ctx.fillStyle = palette.pitch
-  ctx.beginPath()
-  ctx.roundRect(-hx, -hy, hx * 2, hy * 2, GRASS_CORNER_PX * px)
+  grass(ctx, scale)
   ctx.fill()
   ctx.strokeStyle = palette.line
   ctx.lineWidth = LINE_PX * px

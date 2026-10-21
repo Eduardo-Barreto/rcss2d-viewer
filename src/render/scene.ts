@@ -6,7 +6,7 @@ import { BALL_STRIDE, type Match, PLAYERS_PER_SIDE, PlayerState, SLOT_COUNT } fr
 
 import { type Camera, type Point, type Viewport, toScreen, worldTransform } from './camera'
 import type { Palette } from './palette'
-import { drawPitch } from './pitch'
+import { clipToGrass, drawPitch } from './pitch'
 import { type PlayerPose, ballAt, posesAt } from './sample'
 
 /** Layers the person can switch on and off. */
@@ -41,17 +41,19 @@ const ACTION_RING_PX = 2.5
 const LABEL_SCALE = 1.1
 const LABEL_NUDGE_PX = 0.5
 const DEG = Math.PI / HALF_TURN
-const MIN_PLAYER_PX = 7.5
+const MIN_PLAYER_PX = 9
 const MIN_BALL_PX = 3.5
 const LABEL_MAX_PX = 18
 const TRAIL_FRAMES = 40
 const VIEW_CONE_METERS = 25
-const CONE_ALPHA = 0.1
+const CONE_ALPHA = 0.08
 const KICKABLE_ALPHA = 0.35
 const HEAT_ALPHA = 0.75
 const STAMINA_BAR_PX = 3
 const STAMINA_GAP_PX = 4
-const BODY_LINE = 1.6
+const BODY_LINE = 2
+const BODY_ARC = 0.5
+const BODY_GAP_PX = 2
 const SELECT_RING_PX = 3.5
 const CARD_W = 4
 const CARD_H = 6
@@ -152,6 +154,7 @@ function drawWorld(ctx: CanvasRenderingContext2D, input: SceneInput, poses: Play
   const { camera, viewport, dpr, palette, overlays, analysis, selected } = input
   ctx.setTransform(worldTransform(camera, viewport, dpr))
   drawPitch(ctx, camera.scale, analysis.physics.goalWidth, palette)
+  clipToGrass(ctx, camera.scale)
   if (overlays.heatmap)
     drawHeatmap(ctx, input, selected < 0 ? palette.foreground : teamColor(input, selected))
   if (overlays.offside) drawOffside(ctx, input)
@@ -162,6 +165,7 @@ function drawWorld(ctx: CanvasRenderingContext2D, input: SceneInput, poses: Play
     drawTrail(ctx, input, -1)
     if (selected >= 0) drawTrail(ctx, input, selected)
   }
+  ctx.restore()
 }
 
 function playerRadius(input: SceneInput): number {
@@ -232,7 +236,6 @@ function drawPlayer(ctx: CanvasRenderingContext2D, input: SceneInput, pose: Play
   const at = px(input, pose)
   const r = playerRadius(input)
   const goalie = ((input.match.frames.state[pose.k] ?? 0) & PlayerState.GOALIE) !== 0
-  const left = pose.slot < PLAYERS_PER_SIDE
   drawKickable(ctx, input, pose, at)
   ctx.fillStyle = teamColor(input, pose.slot)
   ctx.beginPath()
@@ -244,11 +247,10 @@ function drawPlayer(ctx: CanvasRenderingContext2D, input: SceneInput, pose: Play
     ctx.stroke()
   }
   const angle = screenAngle(input, pose.body)
-  ctx.strokeStyle = left ? input.palette.inkL : input.palette.inkR
+  ctx.strokeStyle = input.palette.foreground
   ctx.lineWidth = BODY_LINE
   ctx.beginPath()
-  ctx.moveTo(at.x, at.y)
-  ctx.lineTo(at.x + Math.cos(angle) * r, at.y + Math.sin(angle) * r)
+  ctx.arc(at.x, at.y, r + BODY_GAP_PX, angle - BODY_ARC, angle + BODY_ARC)
   ctx.stroke()
   label(ctx, input, pose, at)
   drawMarks(ctx, input, pose, at)

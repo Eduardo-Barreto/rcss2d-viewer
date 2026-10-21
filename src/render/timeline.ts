@@ -59,12 +59,9 @@ function drawPossession(
   const per = match.frames.count / columns
   ctx.globalAlpha = STRIP_ALPHA
   for (let column = 0; column < columns; column++) {
-    const owner = ownerOfRange(
-      match,
-      analysis.owner,
-      Math.floor(column * per),
-      Math.floor((column + 1) * per),
-    )
+    const start = Math.floor(column * per)
+    const end = Math.max(start + 1, Math.floor((column + 1) * per))
+    const owner = ownerOfRange(match, analysis.owner, start, end)
     ctx.fillStyle = [palette.teamL, palette.teamR][owner] ?? palette.line
     ctx.fillRect(column, y, 1, STRIP_PX)
   }
