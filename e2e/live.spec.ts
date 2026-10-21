@@ -73,5 +73,6 @@ test.describe('Ao vivo', () => {
     await page.getByLabel('Endereço ws:// da ponte').fill('ws://127.0.0.1:6199')
     await page.getByRole('button', { name: 'Conectar' }).click()
     await expect(page.getByRole('alert')).toContainText('just relay')
+    await expect(page.getByRole('alert')).toContainText('rede local')
   })
 })

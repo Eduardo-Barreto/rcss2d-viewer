@@ -20,7 +20,7 @@ const LIVE_ANALYSIS_MS = 1500
 const END_TEXT: Record<LiveEnd, string> = {
   closed: 'A ponte fechou a conexão antes do primeiro quadro.',
   unreachable:
-    'Não consegui falar com a ponte. Ela está rodando (just relay)? No Safari, ws:// não funciona numa página https.',
+    'Não consegui falar com a ponte. Ela está rodando (just relay)? No Chrome, permita o acesso à rede local no ícone da barra de endereço e conecte de novo. No Safari, ws:// não funciona numa página https.',
   full: 'O jogo passou do limite de quadros.',
   restarted: 'O servidor começou outra partida antes do primeiro quadro.',
   invalid: 'A ponte mandou algo que não é do monitor do rcssserver.',
