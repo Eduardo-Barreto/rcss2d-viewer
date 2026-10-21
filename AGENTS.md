@@ -25,7 +25,7 @@ O `.rcg` vem de fora, então é dado não confiável.
 
 - `just` lista as receitas. `just verify` é o gate (lint, format, tipos, knip, testes de unidade, build). `just e2e` roda o Playwright. `just ci` roda os dois, é o que vale antes de pedir merge enquanto o GitHub Actions estiver parado.
 - `bun run dev` sobe o Vite via portless (`rcss2d-viewer.localhost`). `bun run dev:host` expõe em `0.0.0.0`, que é o que o Playwright usa.
-- `just deploy` publica no Cloudflare Pages (projeto `rcss2d-viewer`, `rcssmonitor.barreto.sh`). Só roda na `main` limpa e igual à `origin/main`, depois de `just ci`.
+- `just deploy` publica no Cloudflare Pages (projeto `rcss2d-viewer`, `rcssviewer.barreto.sh`). Só roda na `main` limpa e igual à `origin/main`, depois de `just ci`.
 
 ## Stack
 

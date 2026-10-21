@@ -4,7 +4,7 @@ Status: aceito, 2026-10-21
 
 ## Contexto
 
-O Eduardo quer abrir um `.rcg` e ver a partida, com análise, em `rcssmonitor.barreto.sh`. O `.rcg` já traz tudo o que o replay precisa: posição, velocidade, direção, fôlego e estado de cada jogador e da bola em cada ciclo, o modo de jogo, o placar e os parâmetros do servidor. O rcssserver gera o log, mas não é preciso rodá-lo para assistir.
+O Eduardo quer abrir um `.rcg` e ver a partida, com análise, em `rcssviewer.barreto.sh`. O `.rcg` já traz tudo o que o replay precisa: posição, velocidade, direção, fôlego e estado de cada jogador e da bola em cada ciclo, o modo de jogo, o placar e os parâmetros do servidor. O rcssserver gera o log, mas não é preciso rodá-lo para assistir.
 
 O arquivo vem de quem abre o site. Um backend que recebe arquivo de fora é superfície de ataque (parser rodando no servidor, armazenamento, cota) e custo fixo.
 

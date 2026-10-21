@@ -1,6 +1,6 @@
 # rcss2d-viewer
 
-Replay e análise de partidas da RoboCup Soccer Simulation 2D a partir de um `.rcg` ou `.rcg.gz`, direto no navegador. No ar em https://rcssmonitor.barreto.sh. O arquivo é lido só na máquina de quem abre.
+Replay e análise de partidas da RoboCup Soccer Simulation 2D a partir de um `.rcg` ou `.rcg.gz`, direto no navegador. No ar em https://rcssviewer.barreto.sh. O arquivo é lido só na máquina de quem abre.
 
 ## Usar
 

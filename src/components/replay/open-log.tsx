@@ -99,7 +99,7 @@ export function OpenLog({ dragging }: OpenLogProps) {
       />
       <Island className="w-[min(420px,calc(100vw-32px))] flex-col items-start gap-4 rounded-[18px] p-5">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[15px] leading-5 font-semibold">rcssmonitor</h1>
+          <h1 className="text-[15px] leading-5 font-semibold">rcssviewer</h1>
           <p className="text-[13px] text-pretty text-muted-foreground">
             Replay e análise de partidas da Soccer Simulation 2D. Solte um <code>.rcg</code> ou{' '}
             <code>.rcg.gz</code> aqui.

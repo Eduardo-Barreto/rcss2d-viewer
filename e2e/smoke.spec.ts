@@ -5,7 +5,7 @@ import { openFixture } from './fixture.ts'
 test.describe('Replay', () => {
   test('abre a tela inicial', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: 'rcssmonitor' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'rcssviewer' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Escolher arquivo' })).toBeVisible()
   })
 
