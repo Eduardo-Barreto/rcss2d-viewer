@@ -4,6 +4,7 @@ import { ALLOWED_COMMANDS, RateLimit, checkCommand, isAllowedOrigin, isLoopback 
 
 describe('isAllowedOrigin', () => {
   test.each([
+    'https://rcssviewer.tapout.gg',
     'https://rcssviewer.barreto.sh',
     'https://rcss2d-viewer.pages.dev',
     'https://feat-live.rcss2d-viewer.pages.dev',
@@ -18,6 +19,11 @@ describe('isAllowedOrigin', () => {
 
   test.each([
     'https://evil.example',
+    'http://rcssviewer.tapout.gg',
+    'https://rcssviewer.tapout.gg.evil.example',
+    'https://evil.rcssviewer.tapout.gg',
+    'https://rcssviewer.tapout.gg:8443',
+    'https://rcssviewer.tapout.gg/',
     'http://rcssviewer.barreto.sh',
     'https://rcssviewer.barreto.sh.evil.example',
     'https://evilrcss2d-viewer.pages.dev',

@@ -73,7 +73,7 @@ describe('checkLogUrl', () => {
     for (const raw of ['http://localhost:6000/a.rcg', 'http://example.com/a.rcg', 'data:,x']) {
       expect(() => checkLogUrl(raw, origin)).toThrow(RcgError)
     }
-    expect(checkLogUrl('//example.com/a.rcg', 'https://rcssviewer.barreto.sh').hostname).toBe(
+    expect(checkLogUrl('//example.com/a.rcg', 'https://rcssviewer.tapout.gg').hostname).toBe(
       'example.com',
     )
   })

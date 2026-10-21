@@ -3,7 +3,13 @@
  * Kept apart from the sockets so every rule has a plain unit test.
  */
 
-const VIEWER_ORIGIN = 'https://rcssviewer.barreto.sh'
+const VIEWER_ORIGIN = 'https://rcssviewer.tapout.gg'
+/**
+ * The viewer's previous host. It now answers with a 301 to `VIEWER_ORIGIN`, so no page should
+ * connect from it. Kept so a relay started from an older checkout and a page still served by the
+ * old host keep working while the move settles. Remove after 2027-01-31 (ADR 0006).
+ */
+const LEGACY_VIEWER_ORIGIN = 'https://rcssviewer.barreto.sh'
 const PAGES_PROJECT = 'rcss2d-viewer.pages.dev'
 const PREVIEW_LABEL = /^[a-z0-9-]{1,63}$/
 const DEV_HOSTS = new Set(['localhost', '127.0.0.1', 'rcss2d-viewer.localhost'])
@@ -32,7 +38,7 @@ function isPreview(url: URL): boolean {
  */
 export function isAllowedOrigin(origin: string | null, allowMissing = false): boolean {
   if (origin === null) return allowMissing
-  if (origin === VIEWER_ORIGIN) return true
+  if (origin === VIEWER_ORIGIN || origin === LEGACY_VIEWER_ORIGIN) return true
   let url: URL
   try {
     url = new URL(origin)
