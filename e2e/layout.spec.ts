@@ -88,3 +88,34 @@ test.describe('Texto', () => {
     expect(await page.evaluate<string[]>(SMALL_TEXT)).toEqual([])
   })
 })
+
+const CONTRAST = `(() => {
+  const style = getComputedStyle(document.documentElement)
+  const ctx = document.createElement('canvas').getContext('2d')
+  const luminance = (name) => {
+    ctx.fillStyle = style.getPropertyValue(name).trim()
+    ctx.fillRect(0, 0, 1, 1)
+    const rgb = [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)].map((v) => {
+      const c = v / 255
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+  }
+  return ['l', 'r'].map((side) => {
+    const [a, b] = [luminance('--team-' + side), luminance('--team-' + side + '-ink')].sort((x, y) => y - x)
+    return (a + 0.05) / (b + 0.05)
+  })
+})()`
+
+const AA = 4.5
+
+test.describe('Cores dos times', () => {
+  for (const theme of ['light', 'dark']) {
+    test(`o número no círculo tem contraste AA no tema ${theme}`, async ({ page }) => {
+      await page.addInitScript((value) => localStorage.setItem('theme', value), theme)
+      await openFixture(page)
+      for (const ratio of await page.evaluate<number[]>(CONTRAST))
+        expect(ratio).toBeGreaterThanOrEqual(AA)
+    })
+  }
+})

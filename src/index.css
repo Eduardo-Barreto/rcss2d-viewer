@@ -80,11 +80,11 @@
   --slab-shadow: 0 1px 0 oklch(0 0 0 / 0.05), 0 18px 40px -22px oklch(0 0 0 / 0.55);
   --artboard-shadow: 0 0 0 1px oklch(0 0 0 / 0.05), 0 2px 0 oklch(0 0 0 / 0.12);
   --team-l: oklch(0.55 0.17 256);
-  --team-r: oklch(0.62 0.17 42);
+  --team-r: oklch(0.57 0.16 42);
   --team-l-ink: oklch(0.985 0 0);
   --team-r-ink: oklch(0.985 0 0);
   --pitch: oklch(0.975 0 0);
-  --pitch-line: oklch(0 0 0 / 0.14);
+  --pitch-line: oklch(0 0 0 / 0.2);
   --ball: oklch(0.2 0 0);
   --ball-ring: oklch(0.995 0 0);
   --event-goal: oklch(0.52 0.1 170);
@@ -124,7 +124,7 @@
   --team-l-ink: oklch(0.18 0 0);
   --team-r-ink: oklch(0.18 0 0);
   --pitch: oklch(0.175 0 0);
-  --pitch-line: oklch(1 0 0 / 0.13);
+  --pitch-line: oklch(1 0 0 / 0.19);
   --ball: oklch(0.98 0 0);
   --ball-ring: oklch(0.12 0 0);
   --event-goal: oklch(0.72 0.12 170);
