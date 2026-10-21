@@ -8,6 +8,7 @@ import { rcgText, showLine } from '@/test/rcg-builder'
 import { type Viewport, fitCamera, toScreen } from './camera'
 import type { Palette } from './palette'
 import { type Overlays, type SceneInput, drawScene, slotAt } from './scene'
+import { drawTimeline, ownerOfRange } from './timeline'
 
 const VIEWPORT: Viewport = {
   width: 1130,
@@ -103,5 +104,40 @@ describe('scene', () => {
     const goalie = toScreen(input.camera, input.viewport, { x: -50, y: 0 })
     expect(slotAt(input, goalie)).toBe(0)
     expect(slotAt(input, { x: 0, y: 0 })).toBe(-1)
+  })
+})
+
+describe('timeline', () => {
+  test('colors a range by the side that owned the ball most', () => {
+    const owner = new Int8Array([0, 1, 1, -1])
+    const live = parseRcgText(
+      rcgText(
+        '(playmode 0 play_on)',
+        ...[1, 2, 3, 4].map((cycle) => showLine(cycle, [0, 0, 0, 0], [])),
+      ),
+    )
+    expect(ownerOfRange(live, owner, 0, 3)).toBe(1)
+    expect(ownerOfRange(live, owner, 0, 1)).toBe(0)
+    expect(ownerOfRange(live, owner, 3, 4)).toBe(-1)
+  })
+
+  test('paints the strip and every mark', () => {
+    const { ctx, calls } = recorder()
+    drawTimeline(ctx, {
+      match,
+      analysis: analyzeMatch(match),
+      marks: [
+        { frame: 0, kind: 'goal', side: 'l', strong: true },
+        { frame: 0, kind: 'shot', side: 'r', strong: false },
+        { frame: 0, kind: 'card', side: 'r', strong: true },
+      ],
+      halves: [0],
+      width: 40,
+      height: 24,
+      dpr: 1,
+      palette: PALETTE,
+    })
+    expect(calls.filter((name) => name === 'arc')).toHaveLength(1)
+    expect(calls.filter((name) => name === 'fillRect').length).toBeGreaterThan(40)
   })
 })
