@@ -20,16 +20,41 @@ export interface LiveConnection {
   stop: () => void
 }
 
+/** The part of a `Worker` a live session uses, so tests can stand in for it. */
+interface LiveWorker {
+  postMessage: (request: WorkerRequest, transfer: Transferable[]) => void
+  terminate: () => void
+  addEventListener: ((
+    type: 'message',
+    listener: (event: MessageEvent<LiveReply>) => void,
+  ) => void) &
+    ((type: 'error', listener: () => void) => void)
+}
+
+function spawnParser(): LiveWorker {
+  return new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
+}
+
 /**
  * Connects to a relay from the parser worker. The URL must already have passed
  * `checkLiveUrl`. The worker outlives the connection, so the match can still be saved, until
  * {@link LiveConnection.stop}.
  */
-export function connectLive(url: string, handlers: LiveHandlers): LiveConnection {
-  const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
+export function connectLive(
+  url: string,
+  handlers: LiveHandlers,
+  spawn: () => LiveWorker = spawnParser,
+): LiveConnection {
+  const worker = spawn()
   const saves: ((file: Blob | null) => void)[] = []
+  let dead = false
   const send = (request: WorkerRequest) => {
-    worker.postMessage(request, [])
+    if (!dead) worker.postMessage(request, [])
+  }
+  const kill = () => {
+    dead = true
+    worker.terminate()
+    for (const resolve of saves.splice(0)) resolve(null)
   }
   worker.addEventListener('message', (event: MessageEvent<LiveReply>) => {
     const reply = event.data
@@ -39,8 +64,7 @@ export function connectLive(url: string, handlers: LiveHandlers): LiveConnection
     else saves.shift()?.(reply.file)
   })
   worker.addEventListener('error', () => {
-    worker.terminate()
-    for (const resolve of saves.splice(0)) resolve(null)
+    kill()
     handlers.end('closed')
   })
   send({ kind: 'live', url })
@@ -48,14 +72,12 @@ export function connectLive(url: string, handlers: LiveHandlers): LiveConnection
     kickOff: () => send({ kind: 'command', command: '(dispstart)' }),
     disconnect: () => send({ kind: 'stop' }),
     save: () => {
+      if (dead) return Promise.resolve(null)
       const { promise, resolve } = Promise.withResolvers<Blob | null>()
       saves.push(resolve)
       send({ kind: 'save' })
       return promise
     },
-    stop: () => {
-      worker.terminate()
-      for (const resolve of saves.splice(0)) resolve(null)
-    },
+    stop: kill,
   }
 }
