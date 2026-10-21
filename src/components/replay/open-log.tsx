@@ -123,7 +123,7 @@ export function OpenLog({ dragging }: OpenLogProps) {
     <main className="fixed inset-0 grid place-items-center bg-background p-4">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-3 rounded-[22px] border-2 border-dashed border-foreground/40 opacity-0 transition-opacity duration-150 ease-(--ease) data-on:opacity-100"
+        className="pointer-events-none absolute inset-3 rounded-[22px] border-2 border-dashed border-foreground/40 opacity-0 transition-opacity duration-150 ease-(--ease-out) data-on:opacity-100"
         data-on={dragging ? '' : undefined}
       />
       <Island className="w-[min(420px,calc(100vw-32px))] flex-col items-start gap-4 rounded-[18px] p-5">

@@ -25,7 +25,7 @@ export function IslandButton({
   return (
     <Button
       className={cn(
-        'h-9 min-w-9 gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium transition-[background-color,transform] duration-100 ease-(--ease) active:scale-[0.97] aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/85 aria-pressed:hover:text-background dark:aria-pressed:hover:bg-foreground/85 phone:h-10 phone:min-w-10 has-[>svg]:px-2.5',
+        'h-9 min-w-9 gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/85 aria-pressed:hover:text-background dark:aria-pressed:hover:bg-foreground/85 phone:h-10 phone:min-w-10 has-[>svg]:px-2.5',
         className,
       )}
       variant={variant}
