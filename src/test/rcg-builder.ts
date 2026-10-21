@@ -11,6 +11,7 @@ export interface PlayerSpec {
   type?: number
   state?: number
   stamina?: number
+  body?: number
   counts?: Partial<Record<Counter, number>>
 }
 
@@ -25,7 +26,7 @@ function playerText(spec: PlayerSpec): string {
   const state = `0x${(spec.state ?? 1).toString(HEX)}`
   return [
     `((${spec.side} ${spec.unum}) ${spec.type ?? 0} ${state}`,
-    `${spec.x} ${spec.y} ${spec.vx ?? 0} ${spec.vy ?? 0} 0 0`,
+    `${spec.x} ${spec.y} ${spec.vx ?? 0} ${spec.vy ?? 0} ${spec.body ?? 0} 0`,
     `(v h 90) (s ${spec.stamina ?? FULL_STAMINA} 1 1 130600) (c ${counts.join(' ')}))`,
   ].join(' ')
 }
