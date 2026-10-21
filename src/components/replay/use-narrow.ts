@@ -1,9 +1,9 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
 /** Below this width the islands stack under the scoreboard. Matches the `compact:` variant. */
-export const COMPACT = '(max-width: 1100px)'
+const COMPACT = '(max-width: 1100px)'
 /** Below this width the panel is a bottom sheet. Matches the `phone:` variant. */
-export const PHONE = '(max-width: 720px)'
+const PHONE = '(max-width: 720px)'
 
 function useMedia(query: string): boolean {
   const subscribe = useCallback(
