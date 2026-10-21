@@ -62,9 +62,25 @@ describe('checkLogUrl', () => {
     }
   })
 
+  test('accepts the viewer origin over http, and paths relative to it', () => {
+    const origin = 'http://localhost:5183'
+    expect(checkLogUrl('http://localhost:5183/assets/a.rcg.gz', origin).pathname).toBe(
+      '/assets/a.rcg.gz',
+    )
+    expect(checkLogUrl('/assets/a.rcg.gz', origin).href).toBe(
+      'http://localhost:5183/assets/a.rcg.gz',
+    )
+    for (const raw of ['http://localhost:6000/a.rcg', 'http://example.com/a.rcg', 'data:,x']) {
+      expect(() => checkLogUrl(raw, origin)).toThrow(RcgError)
+    }
+    expect(checkLogUrl('//example.com/a.rcg', 'https://rcssviewer.barreto.sh').hostname).toBe(
+      'example.com',
+    )
+  })
+
   test('refuses credentials and garbage', () => {
     expect(() => checkLogUrl('https://user:pw@example.com/a.rcg')).toThrow(RcgError)
-    expect(() => checkLogUrl('not a url')).toThrow(RcgError)
+    expect(() => checkLogUrl('not a url', null)).toThrow(RcgError)
   })
 })
 
