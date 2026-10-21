@@ -90,7 +90,7 @@ function Hero({ clip, failed, onPick }: HeroProps) {
   return (
     <section
       aria-labelledby="hero-title"
-      className={`${PAGE} grid items-center gap-8 pt-6 pb-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12 md:pt-12 md:pb-24`}
+      className={`${PAGE} grid grid-cols-1 items-center gap-8 pt-6 pb-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12 md:pt-12 md:pb-24`}
     >
       <div className="flex flex-col items-start gap-5">
         <h1
@@ -149,7 +149,7 @@ function Section({ id, title, body, children, stacked = false }: SectionProps) {
   return (
     <section
       aria-labelledby={id}
-      className={`${PAGE} grid gap-6 border-t border-border py-14 md:py-20 ${stacked ? '' : 'md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:gap-12'}`}
+      className={`${PAGE} grid grid-cols-1 gap-6 border-t border-border py-14 md:py-20 ${stacked ? '' : 'md:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] md:gap-12'}`}
     >
       <div className="flex flex-col gap-3">
         <h2

@@ -134,7 +134,7 @@ export function Comparison() {
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-x-auto rounded-[18px] bg-card shadow-island">
-        <table className="w-full min-w-[560px] border-collapse text-left text-[13px]">
+        <table className="w-full border-collapse text-left text-[13px]">
           <caption className="sr-only">{comparison.caption}</caption>
           <thead>
             <tr className="border-b border-border text-[12px] text-muted-foreground">

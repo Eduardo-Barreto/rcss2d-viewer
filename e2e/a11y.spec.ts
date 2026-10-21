@@ -7,8 +7,27 @@ import { blocking } from './axe.ts'
 import { openFixture } from './fixture.ts'
 
 test.describe('Acessibilidade', () => {
-  test('atende WCAG 2.1 AA na tela inicial', async ({ page }) => {
+  test('atende WCAG 2.1 AA na página inicial', async ({ page }) => {
     await page.goto('/')
+    await page
+      .getByText(/^ciclo \d+$/)
+      .first()
+      .waitFor()
+    expect(await blocking(page)).toEqual([])
+  })
+
+  test('atende WCAG 2.1 AA na página inicial no tema escuro', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('theme', 'dark'))
+    await page.goto('/')
+    await page
+      .getByText(/^ciclo \d+$/)
+      .first()
+      .waitFor()
+    expect(await blocking(page)).toEqual([])
+  })
+
+  test('atende WCAG 2.1 AA na tela inicial do app', async ({ page }) => {
+    await page.goto('/app')
     expect(await blocking(page)).toEqual([])
   })
 

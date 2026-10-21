@@ -80,6 +80,15 @@ const SMALL_TEXT = `[...document.querySelectorAll('body *')]
   .map((el) => el.textContent.trim())`
 
 test.describe('Texto', () => {
+  test('não fica abaixo de 12 px na página inicial', async ({ page }) => {
+    await page.goto('/')
+    await page
+      .getByText(/^ciclo \d+$/)
+      .first()
+      .waitFor()
+    expect(await page.evaluate<string[]>(SMALL_TEXT)).toEqual([])
+  })
+
   test('não fica abaixo de 12 px', async ({ page }) => {
     await openFixture(page)
     expect(await page.evaluate<string[]>(SMALL_TEXT)).toEqual([])
