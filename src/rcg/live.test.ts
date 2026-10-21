@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 
+import { asMonitorLines } from '@/test/monitor-lines'
 import { rcgText, showLine } from '@/test/rcg-builder'
 
 import { FrameStore } from './columns'
@@ -14,27 +15,6 @@ import type { Match } from './types'
 
 const FIXTURE = join(import.meta.dir, 'fixtures', 'rcss2d-mirror-300.rcg.gz')
 const fixtureText = gunzipSync(readFileSync(FIXTURE)).toString('utf8')
-const SHOW_HEAD = /^\(show (?<cycle>\d+)/
-
-/**
- * Rewrites a v6 file as a monitor connection would have received it: no header, no
- * `(playmode)` or `(team)` lines, and `(pm N) (tm ...)` at the start of every show.
- */
-function asMonitorLines(text: string): string[] {
-  let mode = 0
-  let team = 'null null 0 0'
-  const lines: string[] = []
-  for (const line of text.split('\n').slice(1)) {
-    const words = line.slice(1, -1).split(' ')
-    if (line.startsWith('(playmode ')) mode = playModeId(words[2] ?? '') ?? mode
-    else if (line.startsWith('(team ')) team = words.slice(2).join(' ')
-    else if (line.startsWith('(show ')) {
-      lines.push(line.replace(SHOW_HEAD, (head) => `${head} (pm ${mode}) (tm ${team})`))
-    } else if (line !== '') lines.push(line)
-  }
-  return lines
-}
-
 function drained(parser: RcgParser): MatchDelta {
   const delta = parser.drain()
   if (delta === null) throw new Error('nothing to drain')

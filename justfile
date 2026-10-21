@@ -27,6 +27,11 @@ browsers:
 dev *args:
     bun run dev "$@"
 
+# Bridge a running rcssserver to the live mode: UDP monitor in, WebSocket out (see --help)
+[group('dev')]
+relay *args:
+    bun relay/main.ts "$@"
+
 # Type-check and build the static site into dist/
 [group('build')]
 build:

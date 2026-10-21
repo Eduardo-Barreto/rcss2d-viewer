@@ -13,7 +13,7 @@
     "lint:fix": "oxlint --fix",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "test": "bun test src ./scripts ./.oxlint-plugins",
+    "test": "bun test src ./relay ./scripts ./.oxlint-plugins",
     "test:e2e": "playwright test",
     "knip": "knip",
     "react-doctor": "react-doctor",

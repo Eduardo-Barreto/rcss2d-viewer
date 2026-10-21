@@ -27,6 +27,7 @@
     "playwright.config.ts",
     "scripts/**/*.ts",
     ".oxlint-plugins/**/*.ts",
-    "e2e/**/*.ts"
+    "e2e/**/*.ts",
+    "relay/**/*.ts"
   ]
 }
