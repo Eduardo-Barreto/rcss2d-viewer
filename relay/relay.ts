@@ -8,8 +8,16 @@ export type RelayLog = (event: Record<string, unknown>) => void
 
 /** Timings, shortened by the tests. */
 export interface RelayTiming {
-  /** How often `(dispinit)` is sent until the server answers. */
+  /** Wait before the second `(dispinit)`; it doubles after each one the server leaves unanswered. */
   retryMs: number
+  /** Longest wait between two `(dispinit)`. */
+  maxRetryMs: number
+  /**
+   * `(dispinit)` sent without an answer before the relay stops trying, until a page joins again.
+   * With `max_monitors=-1` each one the server got but could not answer is a monitor it keeps
+   * (`src/stadium.cpp:2790`), which is what happens when the answers cannot come back.
+   */
+  initAttempts: number
   /** Silence after which the server counts as down. Pages hear it; the session stays. */
   silenceMs: number
   /**
@@ -43,7 +51,13 @@ interface RelayStatus {
 const INIT = '(dispinit version 5)\0'
 const BYE = '(dispbye)\0'
 const TOPIC = 'live'
-const DEFAULT_TIMING: RelayTiming = { retryMs: 1000, silenceMs: 3000, reconnectMs: 30_000 }
+const DEFAULT_TIMING: RelayTiming = {
+  retryMs: 1000,
+  maxRetryMs: 16_000,
+  initAttempts: 8,
+  silenceMs: 3000,
+  reconnectMs: 30_000,
+}
 const MAX_COMMAND_BYTES = 64
 const BACKPRESSURE_BYTES = 4_194_304
 const IDLE_SECONDS = 60
@@ -51,14 +65,17 @@ const COMMAND_BURST = 4
 const COMMAND_REFILL_MS = 1000
 const MAX_STRIKES = 20
 const POLICY_VIOLATION = 1008
+const TRY_AGAIN_LATER = 1013
+/** Pages at once. Each one is a tab of the viewer; more than this is not a person watching. */
+const MAX_CLIENTS = 16
 const MAX_CACHED_GRAPHICS = 1024
 /** `server_param`, `player_param` and the player types: 20 lines in rcssserver 19. */
 const MAX_CACHED_PARAMS = 256
 const BEFORE_KICK_OFF = 1
+const DROP_LOG_EVERY = 1000
 const SHOW_MODE = /^\(show \d+ \(pm (?<mode>\d+)\)/
 
 interface Client {
-  limit: RateLimit
   strikes: number
 }
 
@@ -77,7 +94,10 @@ class MonitorLink {
   private socket: udp.Socket<'buffer'> | null = null
   private opening: Promise<void> | null = null
   private wanted = false
+  /** True once the server answered from its dedicated port; only that port is heard from then on. */
   private answered = false
+  private attempts = 0
+  private nextInit = 0
   private serverPort: number
   private lastData = 0
   private timer: ReturnType<typeof setInterval> | null = null
@@ -113,6 +133,8 @@ class MonitorLink {
   /** Joins the server as a monitor. Safe to call again while a first call is still opening. */
   async open(): Promise<void> {
     this.wanted = true
+    this.attempts = 0
+    this.nextInit = 0
     this.opening ??= this.bind()
     await this.opening
   }
@@ -134,6 +156,8 @@ class MonitorLink {
     this.socket = socket
     this.serverPort = this.options.server.port
     this.answered = false
+    this.attempts = 0
+    this.nextInit = 0
     this.log({ event: 'monitor-open', local: `${socket.hostname}:${socket.port}` })
     this.tick()
     this.timer = setInterval(() => this.tick(), this.timing.retryMs)
@@ -168,12 +192,33 @@ class MonitorLink {
       this.send(BYE, this.serverPort)
       this.answered = false
       this.serverPort = this.options.server.port
+      this.attempts = 0
+      this.nextInit = 0
       this.log({ event: 'server-reinit' })
     }
-    if (!this.answered) this.send(INIT, this.options.server.port)
+    if (!this.answered) this.init()
   }
 
-  /** Sends one datagram. A port that is gone fails right here (ECONNREFUSED): the server is down. */
+  /** Sends `(dispinit)` when its backoff is over, and gives up after `initAttempts`. */
+  private init(): void {
+    const now = Date.now()
+    if (this.attempts >= this.timing.initAttempts || now < this.nextInit) return
+    this.send(INIT, this.options.server.port)
+    this.attempts++
+    const wait = this.timing.retryMs * 2 ** (this.attempts - 1)
+    this.nextInit = now + Math.min(wait, this.timing.maxRetryMs)
+    if (this.attempts < this.timing.initAttempts) return
+    this.log({
+      event: 'server-gave-up',
+      attempts: this.attempts,
+      hint: 'no answer to (dispinit); with the server in Docker, run the relay on its network',
+    })
+  }
+
+  /**
+   * Sends one datagram. Bun returns true even when nothing listens there: the ECONNREFUSED
+   * comes later, through the socket's `error` callback, which marks the server down.
+   */
   private send(text: string, port: number): void {
     try {
       this.socket?.send(text, port, this.options.server.host)
@@ -182,22 +227,49 @@ class MonitorLink {
     }
   }
 
+  /**
+   * Hears only the server. Before it answers, an `(error ...)` from the init port is logged and
+   * the first `(server_param ...)`, which `Monitor::sendInit` sends before anything else from
+   * the new dedicated port (`src/stadium.cpp:2819`, `src/monitor.cpp:181-185`), fixes that port.
+   * From then on any other port is dropped, so another local process cannot add frames or take
+   * the commands.
+   */
   private receive(buffer: Buffer, port: number, address: string): void {
     if (address !== this.options.server.host && !address.endsWith(`:${this.options.server.host}`)) {
+      this.dropped('address')
       return
     }
     const line = strip(buffer)
-    this.lastData = Date.now()
-    if (line.startsWith('(error')) {
-      this.log({ event: 'server-error', message: line.slice(0, MAX_COMMAND_BYTES) })
+    if (!this.answered) {
+      if (line.startsWith('(error') && port === this.options.server.port) {
+        this.log({ event: 'server-error', message: line.slice(0, MAX_COMMAND_BYTES) })
+        return
+      }
+      if (!line.startsWith('(server_param')) {
+        this.dropped('before-answer')
+        return
+      }
+      this.answered = true
+      this.serverPort = port
+    } else if (port !== this.serverPort) {
+      this.dropped('port')
       return
     }
+    this.lastData = Date.now()
     if (line.startsWith('(server_param')) this.startSession()
-    this.answered = true
-    this.serverPort = port
     this.setUp(true)
     this.remember(line)
     this.onLine(line)
+  }
+
+  private droppedCount = 0
+
+  /** Counts a datagram that did not come from the server; logs the first and every 1000th. */
+  private dropped(reason: string): void {
+    this.droppedCount++
+    if (this.droppedCount % DROP_LOG_EVERY === 1) {
+      this.log({ event: 'udp-dropped', reason, count: this.droppedCount })
+    }
   }
 
   /** Drops what a late page would get: it belongs to a session that is over. */
@@ -270,10 +342,12 @@ export async function startRelay(
     status: () => publish?.(statusLine(link)),
   })
   const clients = new Set<ServerWebSocket<Client>>()
+  /** One budget for every page, so opening another connection does not buy more commands. */
+  const limit = new RateLimit(COMMAND_BURST, COMMAND_REFILL_MS, Date.now())
 
   const message = (ws: ServerWebSocket<Client>, raw: string | Buffer) => {
     const text = typeof raw === 'string' ? raw : raw.toString('utf8')
-    const refusal = checkCommand(text, link.mode === BEFORE_KICK_OFF, ws.data.limit, Date.now())
+    const refusal = checkCommand(text, link.mode === BEFORE_KICK_OFF, limit, Date.now())
     if (refusal === null && text === '(dispbye)') {
       ws.close()
       return
@@ -298,10 +372,7 @@ export async function startRelay(
         log({ event: 'origin-refused', origin: origin?.slice(0, MAX_COMMAND_BYTES) ?? null })
         return new Response('origin not allowed\n', { status: 403 })
       }
-      const client: Client = {
-        limit: new RateLimit(COMMAND_BURST, COMMAND_REFILL_MS, Date.now()),
-        strikes: 0,
-      }
+      const client: Client = { strikes: 0 }
       if (bun.upgrade(request, { data: client })) return undefined
       return new Response('this is a WebSocket relay for the rcss2d viewer\n', { status: 426 })
     },
@@ -312,6 +383,11 @@ export async function startRelay(
       idleTimeout: IDLE_SECONDS,
       perMessageDeflate: false,
       open(ws) {
+        if (clients.size >= MAX_CLIENTS) {
+          log({ event: 'client-refused', reason: 'full', clients: clients.size })
+          ws.close(TRY_AGAIN_LATER, 'too many pages')
+          return
+        }
         clients.add(ws)
         ws.send(statusLine(link))
         for (const line of link.backlog()) ws.send(line)
@@ -321,7 +397,7 @@ export async function startRelay(
       },
       message,
       close(ws) {
-        clients.delete(ws)
+        if (!clients.delete(ws)) return
         log({ event: 'client-close', clients: clients.size })
         if (clients.size === 0) link.close()
       },
@@ -334,10 +410,13 @@ export async function startRelay(
   log({ event: 'listening', url: `ws://${options.listen.host}:${port}` })
   return {
     port,
-    async stop() {
+    stop() {
       link.close()
-      await server.stop(true)
+      // Not awaited: in Bun 1.3.13 the promise never settles once the relay itself closed a
+      // page's socket, though the port and every connection are closed right away.
+      void server.stop(true)
       log({ event: 'stopped' })
+      return Promise.resolve()
     },
   }
 }
