@@ -59,13 +59,46 @@ test.describe('Página inicial', () => {
     await expect(page.getByRole('heading', { name: 'rcssviewer' })).toBeVisible()
   })
 
-  test('abre o lance do topo no app', async ({ page }) => {
+  test('abre o lance do topo no app, no ciclo do gol', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'Abrir este lance no app' }).click()
-    await expect(page).toHaveURL(/\/app(#t=\d+)?$/)
+    await page.getByRole('link', { name: 'Abrir este lance no app' }).click()
+    const slider = page.getByRole('slider', { name: 'Posição na partida' })
+    await expect(slider).toHaveAttribute('aria-valuetext', /ciclo 2711$/)
+    await expect(page).toHaveURL(/\/app\?url=[^#]+robocup2026-final[^#]*#t=2711$/)
     await expect(page.getByRole('region', { name: 'Placar da partida' })).toContainText(
       'YuShan2026',
     )
+    await page.reload()
+    await expect(slider).toHaveAttribute('aria-valuetext', /ciclo 2711$/)
+  })
+
+  test('o endereço do lance abre a final no ciclo do gol', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('link', { name: /robocup2026-final.*#t=2711/ }).click()
+    await expect(page.getByRole('slider', { name: 'Posição na partida' })).toHaveAttribute(
+      'aria-valuetext',
+      /ciclo 2711$/,
+    )
+  })
+
+  test('voltar do app devolve a página inicial onde ela estava', async ({ page }) => {
+    await page.goto('/')
+    await page
+      .getByRole('heading', { name: 'rcssviewer e rcssmonitor, lado a lado' })
+      .scrollIntoViewIfNeeded()
+    const before = await page.evaluate(
+      'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(scrollY))))',
+    )
+    expect(before).toBeGreaterThan(0)
+    await page.getByLabel('Arquivo .rcg').setInputFiles(FIXTURE)
+    await expect(page).toHaveURL(/\/app$/)
+    await expect(page.getByRole('slider', { name: 'Posição na partida' })).toBeVisible()
+    await page.goBack()
+    await expect(page).toHaveURL(/\/$/)
+    await expect.poll(() => page.evaluate('window.scrollY')).toBe(before)
+    await page.goForward()
+    await expect(page).toHaveURL(/\/app$/)
+    await expect(page.getByRole('slider', { name: 'Posição na partida' })).toBeVisible()
   })
 
   test('mostra a comparação com o rcssmonitor', async ({ page }) => {

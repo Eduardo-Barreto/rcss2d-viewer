@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { ArrowRight, FileUp, Moon, Play, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -6,9 +6,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { APP_PATH } from '@/player/app-route'
 import { cycleAt } from '@/player/format'
-import { useReplay } from '@/player/store'
 
-import { CLIP_NAME, type Clip, clipLink } from './clip'
+import { type Clip, clipLink } from './clip'
 import { ClipCanvas } from './clip-canvas'
 import type { FrameWindow } from './clip-windows'
 import { COPY } from './copy'
@@ -75,17 +74,8 @@ interface HeroProps {
 }
 
 function Hero({ clip, failed, onPick }: HeroProps) {
-  const navigate = useNavigate()
   const [frame, setFrame] = useState(-1)
   const cycle = clip === null || frame < 0 ? null : cycleAt(clip.match, frame)
-
-  const openClip = () => {
-    if (clip === null) return
-    const replay = useReplay.getState()
-    replay.show(clip.match, CLIP_NAME)
-    replay.seek(clip.hero.from)
-    void navigate({ to: APP_PATH })
-  }
 
   return (
     <section
@@ -102,14 +92,11 @@ function Hero({ clip, failed, onPick }: HeroProps) {
         <p className={`${LEAD} max-w-[44ch] md:text-[16px] md:leading-7`}>{COPY.hero.lead}</p>
         <div className="flex flex-wrap items-center gap-2">
           <PickButton onPick={onPick} />
-          <Button
-            className="h-11 rounded-[12px] px-4 text-[14px]"
-            disabled={clip === null}
-            onClick={openClip}
-            variant="secondary"
-          >
-            <Play aria-hidden />
-            {COPY.hero.openClip}
+          <Button asChild className="h-11 rounded-[12px] px-4 text-[14px]" variant="secondary">
+            <a href={clipLink()}>
+              <Play aria-hidden />
+              {COPY.hero.openClip}
+            </a>
           </Button>
         </div>
         <p className="text-[13px] text-muted-foreground">{COPY.hero.drop}</p>

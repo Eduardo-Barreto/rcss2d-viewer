@@ -8,8 +8,8 @@ import type { Match } from '@/rcg/types'
 import { type FrameWindow, GOAL_CYCLE, clipWindows } from './clip-windows'
 import clipUrl from './clip/robocup2026-final.rcg.gz?url'
 
-/** File name the example match opens under in the app. */
-export const CLIP_NAME = 'robocup2026-final-gol.rcg.gz'
+/** File name the example match is read under. */
+const CLIP_NAME = 'robocup2026-final-gol.rcg.gz'
 
 /** The example match, read and analyzed once for every demo on the page. */
 export interface Clip {
@@ -32,7 +32,7 @@ async function clipOf(bytes: Blob): Promise<Clip> {
 /** The address that opens the example clip in the app at the goal, the way a shared link does. */
 export function clipLink(): string {
   const url = new URL(clipUrl, window.location.origin).href
-  return `${window.location.origin}${addressOf(APP_PATH, url, GOAL_CYCLE)}`
+  return `${window.location.origin}${addressOf(APP_PATH, { url, live: null }, GOAL_CYCLE)}`
 }
 
 let pending: Promise<Clip> | null = null
