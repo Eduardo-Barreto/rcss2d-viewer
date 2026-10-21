@@ -115,6 +115,23 @@ describe('relay', () => {
     expect(fake.commands).toEqual([])
   })
 
+  test('passes one (dispstart) on when a page sends two before the next show', async () => {
+    const { server: fake, relay: running } = await start(true)
+    const tab = connect(running.port)
+    await until(() => shows(tab).length >= 2)
+    tab.socket.send('(dispstart)')
+    tab.socket.send('(dispstart)')
+    await until(() => events.some((event) => event.reason === 'not-waiting'))
+    expect(fake.commands).toEqual(['(dispstart)'])
+  })
+
+  test('binds the monitor socket to loopback when the server is on loopback', async () => {
+    const { relay: running } = await start()
+    connect(running.port)
+    await until(() => events.some((event) => event.event === 'monitor-open'))
+    expect(events.find((event) => event.event === 'monitor-open')?.local).toStartWith('127.0.0.1:')
+  })
+
   test('leaves the server when the last tab goes', async () => {
     const { server: fake, relay: running } = await start()
     const tab = connect(running.port)

@@ -120,7 +120,7 @@ class MonitorLink {
   private async bind(): Promise<void> {
     if (this.socket !== null) return
     const socket = await Bun.udpSocket({
-      hostname: this.options.server.host.includes(':') ? '::' : '0.0.0.0',
+      hostname: localAddress(this.options.server.host),
       socket: {
         data: (_socket, buffer, port, address) => this.receive(buffer, port, address),
         error: () => this.setUp(false),
@@ -134,7 +134,7 @@ class MonitorLink {
     this.socket = socket
     this.serverPort = this.options.server.port
     this.answered = false
-    this.log({ event: 'monitor-open', localPort: socket.port })
+    this.log({ event: 'monitor-open', local: `${socket.hostname}:${socket.port}` })
     this.tick()
     this.timer = setInterval(() => this.tick(), this.timing.retryMs)
   }
@@ -238,6 +238,12 @@ class MonitorLink {
   }
 }
 
+/** Where the UDP socket binds: loopback when the server is on loopback, so nothing else hears it. */
+function localAddress(serverHost: string): string {
+  if (serverHost === '127.0.0.1' || serverHost === '::1') return serverHost
+  return serverHost.includes(':') ? '::' : '0.0.0.0'
+}
+
 function statusLine(link: MonitorLink): string {
   const status: RelayStatus = {
     relay: 'status',
@@ -274,6 +280,7 @@ export async function startRelay(
     }
     if (refusal === null) {
       link.command(text)
+      if (text === '(dispstart)') link.mode = -1
       log({ event: 'command', command: text })
       return
     }
