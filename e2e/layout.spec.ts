@@ -64,3 +64,12 @@ test.describe('Celular', () => {
     await expect(page.getByRole('dialog', { name: 'Atalhos' })).toBeVisible()
   })
 })
+
+test.describe('Título da aba', () => {
+  test('dá à aba o nome dos times e devolve ao fechar', async ({ page }) => {
+    await openFixture(page)
+    await expect(page).toHaveTitle('rcss2d × mirror · rcssviewer')
+    await page.getByRole('button', { name: 'Abrir outra partida' }).click()
+    await expect(page).toHaveTitle('rcssviewer')
+  })
+})

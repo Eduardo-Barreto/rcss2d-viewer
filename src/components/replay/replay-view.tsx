@@ -2,7 +2,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { addressOf, cycleHash, parseDeepLink } from '@/player/deep-link'
-import { cycleAt, frameOfCycle } from '@/player/format'
+import { cycleAt, frameOfCycle, teamName } from '@/player/format'
 import { momentsOf } from '@/player/moments'
 import { useReplay } from '@/player/store'
 import type { Match } from '@/rcg/types'
@@ -121,6 +121,20 @@ interface Layout {
   row: CSSProperties
 }
 
+const TITLE = 'rcssviewer'
+
+/** Names the tab after the match, so a few open replays can be told apart. */
+function useTitle(): void {
+  const match = useReplay((s) => s.match)
+  useEffect(() => {
+    if (match !== null)
+      document.title = `${teamName(match, 'l')} × ${teamName(match, 'r')} · ${TITLE}`
+    return () => {
+      document.title = TITLE
+    }
+  }, [match])
+}
+
 function useLayout(): Layout {
   const panelOpen = useReplay((s) => s.panelOpen)
   const narrow = useNarrow()
@@ -158,6 +172,7 @@ function Stage() {
 
   usePlayback()
   useShortcuts(moments, toggleHelp)
+  useTitle()
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-(--pitch)">
