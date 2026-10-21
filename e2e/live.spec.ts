@@ -33,7 +33,7 @@ async function kickOff(page: Page): Promise<void> {
 
 test.describe('Ao vivo', () => {
   test('conecta pela tela inicial e começa a partida', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/app')
     await page.getByLabel('Endereço ws:// da ponte').fill(RELAY)
     await page.getByRole('button', { name: 'Conectar' }).click()
     await expect(page.getByText('Ao vivo', { exact: true })).toBeVisible({ timeout: START_MS })
@@ -104,7 +104,7 @@ test.describe('Ao vivo', () => {
   })
 
   test('explica quando a ponte não responde', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/app')
     await page.getByLabel('Endereço ws:// da ponte').fill('ws://127.0.0.1:6199')
     await page.getByRole('button', { name: 'Conectar' }).click()
     await expect(page.getByRole('alert')).toContainText('just relay')
