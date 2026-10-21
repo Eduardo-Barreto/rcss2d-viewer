@@ -1,6 +1,5 @@
 import { Crosshair, Minus, Plus } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
 import { ZOOM_STEP, useCamera } from '@/player/camera-store'
 import { useReplay } from '@/player/store'
 
@@ -43,7 +42,6 @@ export function Zoom({ className }: { className?: string }) {
         <IslandButton
           aria-label="Seguir a bola"
           aria-pressed={following}
-          className={cn(following && 'bg-accent text-accent-foreground')}
           onClick={() => setFollow(following ? 'off' : 'ball')}
         >
           <Crosshair aria-hidden className="size-4" />

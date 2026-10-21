@@ -125,7 +125,6 @@ export function PanelToggle() {
       <IslandButton
         aria-label="Painel da partida"
         aria-pressed={open}
-        className={cn(open && 'bg-accent text-accent-foreground')}
         onClick={() => setPanelOpen(!open)}
       >
         <PanelRight aria-hidden className="size-4" />

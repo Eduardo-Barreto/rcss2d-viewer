@@ -17,7 +17,10 @@ export function Island({ className, ...props }: ComponentProps<'div'>) {
   )
 }
 
-/** A ghost button inside an island, 36 px tall (40 px on a phone), with a small press. */
+/**
+ * A ghost button inside an island, 36 px tall (40 px on a phone), with a small press. A toggle
+ * that is on (`aria-pressed`) turns solid, so its state does not hang on a faint grey.
+ */
 export function IslandButton({
   className,
   variant = 'ghost',
@@ -26,7 +29,7 @@ export function IslandButton({
   return (
     <Button
       className={cn(
-        'h-9 min-w-9 gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium transition-[background-color,transform] duration-100 ease-(--ease) active:scale-[0.97] max-[720px]:h-10 max-[720px]:min-w-10 has-[>svg]:px-2.5',
+        'h-9 min-w-9 gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium transition-[background-color,transform] duration-100 ease-(--ease) active:scale-[0.97] aria-pressed:bg-foreground aria-pressed:text-background aria-pressed:hover:bg-foreground/85 aria-pressed:hover:text-background dark:aria-pressed:hover:bg-foreground/85 max-[720px]:h-10 max-[720px]:min-w-10 has-[>svg]:px-2.5',
         className,
       )}
       variant={variant}

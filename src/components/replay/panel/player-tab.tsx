@@ -138,7 +138,7 @@ export function PlayerTab() {
       <div className="flex gap-1.5">
         <IslandButton
           aria-pressed={following}
-          className={cn('flex-1 justify-center', following && 'bg-accent')}
+          className="flex-1 justify-center"
           onClick={() => setFollow(following ? 'off' : 'selected')}
           variant="secondary"
         >
@@ -147,7 +147,7 @@ export function PlayerTab() {
         </IslandButton>
         <IslandButton
           aria-pressed={heatOn}
-          className={cn('flex-1 justify-center', heatOn && 'bg-accent')}
+          className="flex-1 justify-center"
           onClick={() => (heatOn ? toggleOverlay('heatmap') : setHeat('selected'))}
           variant="secondary"
         >

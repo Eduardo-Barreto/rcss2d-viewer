@@ -70,16 +70,16 @@ function Roster({ side }: { side: Side }) {
             <li key={slot}>
               <button
                 aria-pressed={selected === slot}
-                className="flex h-8 w-full items-center gap-2 rounded-[8px] px-2 text-left text-[13px] transition-colors duration-100 hover:bg-accent aria-pressed:bg-accent"
+                className="group flex h-8 w-full items-center gap-2 rounded-[8px] px-2 text-left text-[13px] transition-colors duration-100 hover:bg-accent aria-pressed:bg-foreground aria-pressed:text-background"
                 onClick={() => select(selected === slot ? -1 : slot)}
                 type="button"
               >
                 <span className="w-5 font-mono tabular-nums">{unumOfSlot(slot)}</span>
-                <span className="flex-1 truncate text-muted-foreground">
+                <span className="flex-1 truncate text-muted-foreground group-aria-pressed:text-background/75">
                   {tally.goals > 0 ? `${tally.goals} gol${tally.goals > 1 ? 's' : ''}` : ''}
                 </span>
                 <span className="font-mono text-[12px] tabular-nums">{tally.touches}</span>
-                <span className="w-16 text-right font-mono text-[12px] text-muted-foreground tabular-nums">
+                <span className="w-16 text-right font-mono text-[12px] text-muted-foreground tabular-nums group-aria-pressed:text-background/75">
                   {distance(tally.distance)}
                 </span>
               </button>

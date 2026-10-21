@@ -53,12 +53,7 @@ function LayerToggle({ layer }: { layer: Layer }) {
   const Icon = layer.icon
   return (
     <Hint label={layer.label} shortcut={layer.shortcut} side="bottom">
-      <IslandButton
-        aria-label={layer.label}
-        aria-pressed={on}
-        className={cn(on && 'bg-accent text-accent-foreground')}
-        onClick={() => toggle(layer.key)}
-      >
+      <IslandButton aria-label={layer.label} aria-pressed={on} onClick={() => toggle(layer.key)}>
         <Icon aria-hidden className="size-4" />
       </IslandButton>
     </Hint>
@@ -81,12 +76,12 @@ function HeatToggle() {
   const setHeat = useReplay((s) => s.setHeat)
   const label = useHeatLabel()
   return (
-    <div className={cn('flex rounded-[10px]', on && 'bg-accent text-accent-foreground')}>
+    <div className={cn('flex rounded-[10px]', on && 'bg-foreground text-background')}>
       <Hint label={`Mapa de calor: ${label(heat)}`} shortcut="H" side="bottom">
         <IslandButton
           aria-label="Mapa de calor"
           aria-pressed={on}
-          className="rounded-r-none hover:bg-foreground/5"
+          className="rounded-r-none hover:bg-current/10 aria-pressed:bg-transparent dark:hover:bg-current/10 aria-pressed:hover:bg-current/10 dark:aria-pressed:hover:bg-current/10"
           onClick={() => toggle('heatmap')}
         >
           <Flame aria-hidden className="size-4" />
@@ -96,7 +91,10 @@ function HeatToggle() {
         <DropdownMenuTrigger asChild>
           <IslandButton
             aria-label="De quem é o mapa de calor"
-            className="min-w-6 rounded-l-none px-1 hover:bg-foreground/5 has-[>svg]:px-1 max-[720px]:min-w-7"
+            className={cn(
+              'min-w-6 rounded-l-none px-1 hover:bg-current/10 aria-expanded:bg-current/10 has-[>svg]:px-1 dark:hover:bg-current/10 max-[720px]:min-w-7',
+              on && 'text-background hover:text-background aria-expanded:text-background',
+            )}
           >
             <ChevronDown aria-hidden className="size-3.5" />
           </IslandButton>
