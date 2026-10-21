@@ -47,13 +47,13 @@ live-smoke image="rcss-server:19.0.0-2026.10.1" port="6301":
     cleanup
     # The server answers each monitor from a new port, which a published UDP port cannot
     # carry back, so the relay runs next to it and only its WebSocket port is published.
-    docker network create --label rcss.arena=1 "$net" >/dev/null
-    docker run -d --rm --name rcss-viewer-smoke-server --label rcss.arena=1 --network "$net" \
+    docker network create --label rcss.viewer=smoke "$net" >/dev/null
+    docker run -d --rm --name rcss-viewer-smoke-server --label rcss.viewer=smoke --network "$net" \
         --memory 512m --cpus 1 -e HOME=/tmp -w /tmp -v "$conf:/arena/server.conf:ro" "$1" \
         --include=/arena/server.conf server::synch_mode=false server::half_time=20 \
         server::game_logging=false server::text_logging=false >/dev/null
     ip="$(docker inspect -f "{{{{(index .NetworkSettings.Networks \"$net\").IPAddress}}" rcss-viewer-smoke-server)"
-    docker run -d --rm --name rcss-viewer-smoke-relay --label rcss.arena=1 --network "$net" \
+    docker run -d --rm --name rcss-viewer-smoke-relay --label rcss.viewer=smoke --network "$net" \
         --memory 256m --cpus 0.5 -p "127.0.0.1:$2:6100" -e HOME=/tmp -w /tmp \
         -v "$(realpath "$(command -v bun)"):/usr/local/bin/bun:ro" -v "$PWD/relay:/relay:ro" node:22-bookworm-slim \
         bun /relay/main.ts --server "$ip:6000" --listen 0.0.0.0:6100 --allow-remote >/dev/null

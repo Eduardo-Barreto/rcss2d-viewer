@@ -3,6 +3,7 @@ import { gunzipSync } from 'node:zlib'
 
 import { type Page, expect, test } from '@playwright/test'
 
+import { blocking } from './axe.ts'
 import { LIVE_RELAY_PORT } from './live-port.ts'
 
 const RELAY = `ws://127.0.0.1:${LIVE_RELAY_PORT}`
@@ -38,16 +39,18 @@ test.describe('Ao vivo', () => {
     await kickOff(page)
     const slider = page.getByRole('slider', { name: 'Posição na partida' })
     await slider.focus()
+    const edge = await cycleOf(page)
     await slider.press('Home')
     await expect(page.getByText('Ao vivo', { exact: true })).toHaveCount(0)
     const back = page.getByRole('button', { name: 'Voltar ao vivo' })
     await expect(back).toBeVisible()
     const behind = await cycleOf(page)
+    expect(behind).toBeLessThan(edge)
     await page.waitForTimeout(500)
     expect(await cycleOf(page)).toBe(behind)
     await back.click()
     await expect(page.getByText('Ao vivo', { exact: true })).toBeVisible()
-    expect(await cycleOf(page)).toBeGreaterThan(behind)
+    expect(await cycleOf(page)).toBeGreaterThan(edge)
   })
 
   test('desconecta, guarda os quadros e salva o .rcg', async ({ page }) => {
@@ -66,6 +69,20 @@ test.describe('Ao vivo', () => {
     const text = gunzipSync(readFileSync(path)).toString('utf8')
     expect(text.startsWith('ULG6\n')).toBe(true)
     expect(text).toContain('(server_param ')
+  })
+
+  test('atende WCAG 2.1 AA esperando, ao vivo e desconectado', async ({ page }) => {
+    await page.goto(`/?live=${encodeURIComponent(RELAY)}`)
+    await expect(page.getByRole('button', { name: 'Começar partida' })).toBeVisible({
+      timeout: START_MS,
+    })
+    expect(await blocking(page)).toEqual([])
+    await kickOff(page)
+    expect(await blocking(page)).toEqual([])
+    await page.getByRole('button', { name: 'Mais opções' }).click()
+    await page.getByRole('menuitem', { name: 'Desconectar' }).click()
+    await expect(page.getByText(/continuam aqui/)).toBeVisible()
+    expect(await blocking(page)).toEqual([])
   })
 
   test('explica quando a ponte não responde', async ({ page }) => {
