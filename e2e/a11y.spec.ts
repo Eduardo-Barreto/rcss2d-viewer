@@ -35,3 +35,19 @@ test.describe('Acessibilidade', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 })
+
+test.describe('Movimento reduzido', () => {
+  test('mantém o fade e tira o zoom do dialog', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await openFixture(page)
+    await page.keyboard.press('?')
+    const dialog = page.getByRole('dialog', { name: 'Atalhos' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).not.toHaveCSS('animation-name', 'none')
+    await expect(dialog).not.toHaveCSS('animation-duration', '1e-05s')
+    const scale = await page.evaluate<string>(
+      `getComputedStyle(document.querySelector('[role=dialog]')).getPropertyValue('--tw-enter-scale').trim()`,
+    )
+    expect(scale).toBe('1')
+  })
+})

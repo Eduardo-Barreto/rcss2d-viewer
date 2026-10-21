@@ -191,7 +191,7 @@ function Stage() {
         </Layers>
       </div>
       <div
-        className="fixed bottom-safe-3 left-safe-3 flex items-end gap-2 transition-[bottom] duration-240 ease-(--ease-drawer)"
+        className="fixed bottom-safe-3 left-safe-3 flex items-end gap-2 motion-safe:transition-[bottom] motion-safe:duration-240 motion-safe:ease-(--ease-drawer)"
         style={layout.row}
       >
         <Transport className="min-w-0 flex-1" moments={moments}>
