@@ -3,6 +3,11 @@ export class RcgError extends Error {
   override name = 'RcgError'
 }
 
+/** A line that does not follow the format, as opposed to a log that passes a limit. */
+export class RcgSyntaxError extends RcgError {
+  override name = 'RcgSyntaxError'
+}
+
 const SPACE = 32
 const TAB = 9
 const CARRIAGE_RETURN = 13
@@ -31,7 +36,7 @@ export class Scanner {
 
   /** Throws an {@link RcgError} that names the line. */
   fail(what: string): never {
-    throw new RcgError(`Linha ${this.line}: ${what}`)
+    throw new RcgSyntaxError(`Linha ${this.line}: ${what}`)
   }
 
   /** Skips spaces and returns the next character code, or -1 at the end of the line. */

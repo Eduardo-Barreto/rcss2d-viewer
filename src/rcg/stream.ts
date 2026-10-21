@@ -105,7 +105,7 @@ async function feedLines(stream: ReadableStream<Uint8Array>, parser: RcgParser, 
     }
     for (const line of lines) parser.push(line)
   }
-  parser.push(carry + decoder.decode())
+  parser.pushLast(carry + decoder.decode())
 }
 
 /**

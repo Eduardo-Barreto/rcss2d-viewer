@@ -148,9 +148,44 @@ describe('parseRcgText refuses bad input', () => {
   ]
   for (const [name, text] of cases) {
     test(`fails on ${name}`, () => {
-      expect(() => parseRcgText(text)).toThrow(RcgError)
+      expect(() => parseRcgText(`${text}\n`)).toThrow(RcgError)
     })
   }
+
+  test('drops a last line cut short and counts it', () => {
+    const match = parseRcgText(log(show(1), show(2).slice(0, 40)))
+    expect(match.frames.count).toBe(1)
+    expect(match.skippedLines).toBe(1)
+  })
+
+  test('still refuses a cut line that is not the last one', () => {
+    expect(() => parseRcgText(log(show(2).slice(0, 40), show(1)))).toThrow(RcgError)
+  })
+
+  test('keeps a complete last line with no newline', () => {
+    expect(parseRcgText(log(show(1), show(2))).frames.count).toBe(2)
+  })
+
+  test('caps play mode and score changes and counts the rest', () => {
+    const limits = { ...DEFAULT_LIMITS, maxEvents: 2 }
+    const match = parseRcgText(
+      log(
+        '(playmode 1 kick_off_l)',
+        '(playmode 1 play_on)',
+        '(playmode 1 kick_in_r)',
+        '(team 1 A B 0 0)',
+        '(team 1 A B 1 0)',
+        '(team 1 A B 2 0)',
+        show(1),
+      ),
+      limits,
+    )
+    expect(match.playmodes).toHaveLength(2)
+    expect(match.scores).toHaveLength(2)
+    expect(match.skippedLines).toBe(2)
+    expect(match.frames.playmode[0]).toBe(playModeId('kick_in_r') ?? -1)
+    expect(match.frames.scoreLeft[0]).toBe(2)
+  })
 
   test('stops at the frame limit', () => {
     const text = log(show(1), show(2), show(3))
@@ -196,6 +231,13 @@ describe('readRcgStream', () => {
   test('reports corrupt gzip as an RcgError', async () => {
     const bytes = readFileSync(FIXTURE).subarray(0, 5000)
     expect(await failure(readRcgStream(streamOf(bytes)))).toBeInstanceOf(RcgError)
+  })
+
+  test('drops a last line cut short in a stream', async () => {
+    const text = new TextEncoder().encode(log(show(1), show(2).slice(0, 40)))
+    const match = await readRcgStream(streamOf(text))
+    expect(match.frames.count).toBe(1)
+    expect(match.skippedLines).toBe(1)
   })
 
   test('refuses JSON logs with a clear message', async () => {

@@ -179,6 +179,9 @@ export interface Match {
   serverParams: ParamMap
   playerParams: ParamMap
   playerTypes: ParamMap[]
-  /** Lines skipped because the type is unknown, kept so the UI can say so. */
+  /**
+   * Lines skipped: unknown type, past the message or event cap, or a last line cut short. Kept
+   * so the UI can say so.
+   */
   skippedLines: number
 }

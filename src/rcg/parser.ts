@@ -1,7 +1,7 @@
 import { FrameStore } from './columns'
 import { cleanText, messageText, readGraphic, readParams, readTeam } from './lines'
 import { playModeId } from './playmodes'
-import { Char, RcgError, Scanner } from './scanner'
+import { Char, RcgError, RcgSyntaxError, Scanner } from './scanner'
 import { readShowBody } from './show'
 import type { GraphicTile, LogMessage, Match, ParamMap, PlayModeChange, ScoreChange } from './types'
 
@@ -15,12 +15,15 @@ export interface RcgLimits {
   maxFrames: number
   /** `(msg ...)` lines kept; the rest are counted and dropped. */
   maxMessages: number
+  /** `(playmode ...)` and `(team ...)` changes kept, each; the rest are counted and dropped. */
+  maxEvents: number
 }
 
 const MIB = 1_048_576
 const MAX_BYTES_MIB = 512
 const MAX_FRAMES = 40_000
 const MAX_MESSAGES = 20_000
+const MAX_EVENTS = 20_000
 const MAX_MESSAGE_LENGTH = 2000
 const MAX_TILES_PER_SIDE = 512
 const MAX_PLAYER_TYPES = 64
@@ -33,6 +36,7 @@ export const DEFAULT_LIMITS: RcgLimits = {
   maxLineLength: 1 * MIB,
   maxFrames: MAX_FRAMES,
   maxMessages: MAX_MESSAGES,
+  maxEvents: MAX_EVENTS,
 }
 
 const FIRST_TEXT_VERSION = 4
@@ -84,6 +88,23 @@ export class RcgParser {
   constructor(limits: RcgLimits = DEFAULT_LIMITS) {
     this.limits = limits
     this.store = new FrameStore(limits.maxFrames)
+  }
+
+  /**
+   * Feeds the text after the last newline. A log cut while it was written ends in half a line,
+   * so a last line that does not parse is counted as skipped instead of refusing the log.
+   */
+  pushLast(line: string): void {
+    if (this.version === 0) {
+      this.push(line)
+      return
+    }
+    try {
+      this.push(line)
+    } catch (error) {
+      if (!(error instanceof RcgSyntaxError)) throw error
+      this.skippedLines++
+    }
   }
 
   /** Feeds one line, without its newline. */
@@ -157,6 +178,10 @@ export class RcgParser {
       return
     }
     this.mode = mode
+    if (this.playmodes.length >= this.limits.maxEvents) {
+      this.skippedLines++
+      return
+    }
     this.playmodes.push({ frame: this.store.count, cycle, mode })
   }
 
@@ -177,6 +202,10 @@ export class RcgParser {
       penaltyMissesRight: missRight,
     }
     this.score = change
+    if (this.scores.length >= this.limits.maxEvents) {
+      this.skippedLines++
+      return
+    }
     this.scores.push(change)
   }
 
@@ -234,6 +263,9 @@ export class RcgParser {
 export function parseRcgText(text: string, limits: RcgLimits = DEFAULT_LIMITS): Match {
   if (text.length > limits.maxBytes) throw new RcgError('O log passa do limite de tamanho.')
   const parser = new RcgParser(limits)
-  for (const line of text.split('\n')) parser.push(line)
+  const lines = text.split('\n')
+  const last = lines.pop() ?? ''
+  for (const line of lines) parser.push(line)
+  parser.pushLast(last)
   return parser.finish()
 }
