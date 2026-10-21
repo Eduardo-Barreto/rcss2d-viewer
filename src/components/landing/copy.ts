@@ -84,7 +84,7 @@ export const COPY = {
   },
   live: {
     title: 'Ao vivo, voltando no meio do jogo',
-    body: 'Uma ponte pequena, que roda ao lado do rcssserver, liga o monitor UDP dele ao navegador por WebSocket. Dá para voltar um lance com o jogo rolando, apertar End para voltar ao vivo, dar a saída de bola e salvar a partida como .rcg v6.',
+    body: 'Uma ponte pequena (just relay), rodando na sua máquina ao lado do rcssserver, liga o monitor UDP dele ao navegador por WebSocket. Dá para voltar um lance com o jogo rolando, apertar End para voltar ao vivo, dar a saída de bola e salvar a partida como .rcg v6. Funciona no Firefox, e no Chrome depois de permitir o acesso à rede local. No Safari não funciona.',
     figure: 'O caminho dos dados no modo ao vivo.',
     steps: [
       { name: 'rcssserver', detail: 'UDP, porta 6000' },
@@ -94,7 +94,7 @@ export const COPY = {
   },
   safety: {
     title: 'O arquivo fica com você',
-    body: 'O log é lido num Web Worker, no seu navegador. Nada é enviado para servidor nenhum, e um arquivo grande demais ou malformado é recusado antes de travar a aba.',
+    body: 'O log é lido num Web Worker, no seu navegador, e nada é enviado para servidor nenhum. Uma linha malformada é pulada e entra na contagem do painel. Só é recusado o arquivo que não é um replay ou que passa dos limites, antes de travar a aba.',
     facts: [
       'Nenhum byte do log sai do seu navegador.',
       `Até ${maxBytes / MIB} MiB de texto descompactado.`,
@@ -110,7 +110,7 @@ export const COPY = {
     viewer: 'rcssviewer',
     monitor: 'rcssmonitor',
     support: { yes: 'Sim', no: 'Não', partial: 'Em parte' },
-    liveNote: 'Precisa da ponte do modo ao vivo rodando ao lado do rcssserver.',
+    liveNote: 'Precisa da ponte local (just relay) rodando ao lado do rcssserver.',
     legend: 'Legenda',
     rows: [
       {
@@ -135,7 +135,7 @@ export const COPY = {
       },
       {
         feature: 'Mapa de calor e rastros',
-        viewer: { support: 'yes', text: 'Bola, time ou jogador' },
+        viewer: { support: 'yes', text: 'Calor: bola, time ou jogador; rastros: bola e jogador' },
         monitor: { support: 'no', text: 'Não tem' },
       },
       {
@@ -149,6 +149,11 @@ export const COPY = {
         monitor: { support: 'yes', text: 'Camadas no campo' },
       },
       {
+        feature: 'Foco, pointto, defesa ilegal, capacidade de fôlego',
+        viewer: { support: 'no', text: 'Não tem' },
+        monitor: { support: 'yes', text: 'Camadas no campo' },
+      },
+      {
         feature: 'Desenhos do time no log',
         viewer: { support: 'no', text: 'Ignora' },
         monitor: { support: 'partial', text: 'Só em log binário antigo (v2, v3)' },
@@ -156,7 +161,7 @@ export const COPY = {
       {
         feature: 'Mensagens do log',
         viewer: { support: 'yes', text: 'Lista com o ciclo de cada uma' },
-        monitor: { support: 'no', text: 'Lê e descarta' },
+        monitor: { support: 'partial', text: 'Só usa as que trazem os logos' },
       },
       {
         feature: 'Parâmetros do servidor',
@@ -185,7 +190,10 @@ export const COPY = {
       },
       {
         feature: 'Jogo ao vivo',
-        viewer: { support: 'yes', text: 'Pela ponte, voltando no meio do jogo' },
+        viewer: {
+          support: 'partial',
+          text: 'Pela ponte local, voltando no meio do jogo. Firefox sim, Chrome com permissão de rede local, Safari não',
+        },
         monitor: { support: 'yes', text: 'Direto pelo UDP do servidor' },
         live: true,
       },

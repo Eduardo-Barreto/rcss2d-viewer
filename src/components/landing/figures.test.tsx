@@ -28,12 +28,26 @@ describe('Comparison', () => {
 
   test('keeps the rows where rcssmonitor wins', () => {
     render(<Comparison />)
-    const row = screen.getByRole('rowheader', { name: 'Medir distância' }).closest('tr')
-    expect(row).not.toBeNull()
-    if (row === null) return
-    const [viewer, monitor] = within(row).getAllByRole('cell')
-    expect(viewer).toHaveTextContent(COPY.comparison.support.no)
-    expect(monitor).toHaveTextContent(COPY.comparison.support.yes)
+    for (const feature of [
+      'Medir distância',
+      'Foco, pointto, defesa ilegal, capacidade de fôlego',
+    ]) {
+      const row = screen.getByRole('rowheader', { name: feature }).closest('tr')
+      expect(row).not.toBeNull()
+      if (row === null) return
+      const [viewer, monitor] = within(row).getAllByRole('cell')
+      expect(viewer).toHaveTextContent(COPY.comparison.support.no)
+      expect(monitor).toHaveTextContent(COPY.comparison.support.yes)
+    }
+  })
+
+  test('names the browsers the live mode works in', () => {
+    render(<Comparison />)
+    const row = screen.getByRole('rowheader', { name: 'Jogo ao vivo *' }).closest('tr')
+    if (row === null) throw new Error('no live row')
+    const [viewer] = within(row).getAllByRole('cell')
+    expect(viewer).toHaveTextContent(COPY.comparison.support.partial)
+    expect(viewer).toHaveTextContent(/Firefox sim, Chrome com permissão de rede local, Safari não/)
   })
 
   test('marks the rows that need the live mode', () => {
