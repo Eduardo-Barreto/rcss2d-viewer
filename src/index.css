@@ -194,6 +194,15 @@
     color-scheme: dark;
   }
 
+  ::selection {
+    background-color: color-mix(in oklch, var(--foreground) 22%, transparent);
+  }
+
+  * {
+    scrollbar-color: color-mix(in oklch, var(--muted-foreground) 60%, transparent) transparent;
+    scrollbar-width: thin;
+  }
+
   body {
     @apply bg-background font-sans text-foreground antialiased;
   }

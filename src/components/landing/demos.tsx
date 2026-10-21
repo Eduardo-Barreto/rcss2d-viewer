@@ -98,11 +98,14 @@ export function MomentsDemo({ clip }: { clip: Clip | null }) {
           </PitchFrame>
           {clip === null ? <div className="h-6" /> : <Strip clip={clip} frame={frame} />}
         </div>
-        <ol aria-label={COPY.moments.list} className="flex flex-col gap-0.5 text-[13px]">
+        <ol
+          aria-label={COPY.moments.list}
+          className="flex min-h-[260px] flex-col gap-0.5 text-[13px] md:min-h-0"
+        >
           {(clip?.moments ?? []).map((moment) => (
             <li
               aria-current={moment === current ? 'step' : undefined}
-              className="flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-muted-foreground transition-colors duration-150 ease-(--ease-out) aria-[current]:bg-card aria-[current]:text-foreground aria-[current]:shadow-island"
+              className="flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-muted-foreground transition-[background-color,color,box-shadow] duration-150 ease-(--ease-out) aria-[current]:bg-card aria-[current]:text-foreground aria-[current]:shadow-island"
               key={`${moment.kind}-${moment.frame}-${moment.slot}`}
             >
               <span aria-hidden className={cn('size-2 flex-none rounded-full', DOT[moment.kind])} />
@@ -145,7 +148,7 @@ export function LayersDemo({ clip }: { clip: Clip | null }) {
       <PitchFrame>
         <ClipCanvas clip={clip} heatmap={heatmap} overlays={overlays} span={wholeSpan} />
         <p
-          aria-live="polite"
+          aria-live={pinned === 'auto' ? 'off' : 'polite'}
           className="absolute top-3 left-3 rounded-[8px] bg-card px-2 py-1 text-[12px] font-medium shadow-island"
         >
           {COPY.layers.names[layer]}
@@ -156,7 +159,7 @@ export function LayersDemo({ clip }: { clip: Clip | null }) {
         <div className="flex flex-wrap gap-1 rounded-[14px] bg-card p-1 shadow-island">
           {(['auto', ...LAYER_KEYS] as const).map((key) => (
             <label
-              className="relative flex h-9 cursor-pointer items-center rounded-[10px] px-3 text-[13px] font-medium text-muted-foreground transition-[background-color,color,scale] duration-150 ease-(--ease-out) select-none has-checked:bg-foreground has-checked:text-background has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring active:scale-[0.97] pointer-fine:hover:text-foreground pointer-fine:has-checked:hover:text-background"
+              className="relative flex h-9 cursor-pointer items-center rounded-[10px] px-3 text-[13px] font-medium text-muted-foreground transition-[background-color,color,scale] duration-120 ease-(--ease-out) select-none has-checked:bg-foreground has-checked:text-background has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring active:scale-[0.97] pointer-fine:hover:text-foreground pointer-fine:has-checked:hover:text-background"
               key={key}
             >
               <input

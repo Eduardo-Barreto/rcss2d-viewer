@@ -169,7 +169,7 @@ function DropOverlay({ dragging }: { dragging: boolean }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-3 z-30 grid place-items-center rounded-[22px] border-2 border-dashed border-foreground/40 bg-background/70 opacity-0 transition-opacity duration-150 ease-(--ease-out) data-on:opacity-100"
+      className="pointer-events-none fixed inset-3 z-30 grid place-items-center rounded-[22px] border-2 border-dashed border-foreground/40 bg-background/70 opacity-0 transition-opacity duration-100 ease-(--ease-out) data-on:opacity-100 data-on:duration-150"
       data-on={dragging ? '' : undefined}
     >
       <p className="rounded-[10px] bg-card px-3 py-2 text-[13px] font-medium shadow-island">
