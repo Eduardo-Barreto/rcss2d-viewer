@@ -2,6 +2,12 @@
   "name": "rcss2d-viewer",
   "version": "0.0.0",
   "private": true,
+  "homepage": "https://rcssviewer.tapout.gg",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Eduardo-Barreto/rcss2d-viewer.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "portless run vite",

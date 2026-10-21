@@ -1,0 +1,41 @@
+rcss2d-viewer
+Copyright (C) 2026 Eduardo Barreto
+
+This program is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version. See LICENSE.
+
+The GPL covers the code and documentation written for this project. The files below come from
+elsewhere or have their own terms.
+
+Landing page clip
+  src/components/landing/clip/robocup2026-final.rcg.gz
+
+  Cycles 2490 to 2725 of the RoboCup 2026 Soccer Simulation 2D final, HELIOS2026 0 x 1
+  YuShan2026, cut with `just clip-rcg`. The full log is
+  logs/U/GdwD62P/GdwD62P_server1_HELIOS2026_0-vs-YuShan2026_1.rcg (sha256
+  8783fe04bf9bbbf873e5cf1825280d1313338d8dac29917f79651ff7e89eba29) inside
+  rc26_day4_finals_logs.tar.gz, published by the league's organizing committee on the RoboCup 2026
+  "Logs & Bins" page at https://www.rcss.dev/rc26/rc26-logsbins. The page states no license.
+  The log is what rcssserver wrote during the match. It also carries the two teams' logos
+  (team_graphic messages), which belong to HELIOS and YuShan.
+
+  The clip is not covered by the GPL. It is here so the landing page shows a real match. If you
+  hold rights to it and want it removed, open an issue.
+
+Test fixtures
+  src/rcg/fixtures/rcss2d-mirror-300.rcg.gz
+  src/rcg/fixtures/rcss2d-mirror-live-215.txt.gz
+
+  Recorded by the author on a local rcssserver 19.0.0: a .rcg and a monitor stream of matches
+  played by the author's own team. No third-party log. Same license as the rest of the
+  repository.
+
+Fonts
+  Geist and Geist Mono, by the Geist Project Authors (https://github.com/vercel/geist-font),
+  installed from @fontsource-variable/geist and @fontsource-variable/geist-mono and bundled into
+  the built site. SIL Open Font License 1.1; the full text ships in each package's LICENSE.
+
+UI components
+  src/components/ui/ started from shadcn/ui (https://ui.shadcn.com), MIT License,
+  Copyright (c) 2023 shadcn.
