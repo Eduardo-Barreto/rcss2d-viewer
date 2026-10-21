@@ -1,7 +1,7 @@
 import { RcgError } from './scanner'
 
 /** Largest file the viewer accepts, before decompression. */
-export const MAX_INPUT_BYTES = 268_435_456
+const MAX_INPUT_BYTES = 268_435_456
 
 /** Where a log comes from: a local file or an `https` URL. */
 export type LogSource = { kind: 'file'; file: Blob; name: string } | { kind: 'url'; url: string }
@@ -27,8 +27,12 @@ export function checkLogUrl(raw: string): URL {
 /** Display name for a source: the file name, or the last path segment of the URL. */
 export function sourceName(source: LogSource): string {
   if (source.kind === 'file') return source.name
-  const path = new URL(source.url).pathname
-  return decodeURIComponent(path.slice(path.lastIndexOf('/') + 1)) || source.url
+  try {
+    const path = new URL(source.url).pathname
+    return decodeURIComponent(path.slice(path.lastIndexOf('/') + 1)) || source.url
+  } catch {
+    return source.url
+  }
 }
 
 /** Opens a source as a byte stream plus its size when known. */
