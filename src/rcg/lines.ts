@@ -6,13 +6,16 @@ const MAX_NAME_LENGTH = 64
 const MAX_SCORE = 65535
 const MAX_PARAMS = 1024
 const MAX_PARAM_STRING = 1024
-const CONTROL_CHARS = /\p{Cc}/gu
+const INVISIBLE_CHARS = /[\p{Cc}\p{Cf}]/gu
 const GRAPHIC_PREFIX = /^\(team_graphic_(?<side>[lr]) \(\s*(?<x>\d+)\s+(?<y>\d+)\s/
 const QUOTED = /"(?<part>[^"]*)"/g
 
-/** Strips control characters and caps the length of any text that came from the log. */
+/**
+ * Replaces control and format characters (bidi overrides, zero-width marks) and caps the length
+ * of any text that came from the log, so a team name cannot reorder the text around it.
+ */
 export function cleanText(text: string, max: number): string {
-  return text.replace(CONTROL_CHARS, ' ').slice(0, max)
+  return text.replace(INVISIBLE_CHARS, ' ').slice(0, max)
 }
 
 /** Reads a `(name value)` sequence until the closing parenthesis of the block. */

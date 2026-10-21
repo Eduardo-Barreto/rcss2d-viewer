@@ -87,6 +87,14 @@ describe('parseRcgText', () => {
     expect(match.scores.at(-1)?.frame).toBe(2)
   })
 
+  test('blanks control and bidi characters in text from the log', () => {
+    const match = parseRcgText(
+      log('(team 1 A\u202Ebad B 0 0)', '(msg 1 1 "hi\u200B\u0007there")', show(1)),
+    )
+    expect(match.leftName).toBe('A bad')
+    expect(match.messages[0]?.text).toBe('hi  there')
+  })
+
   test('keeps penalty fields of the team line', () => {
     const match = parseRcgText(log('(team 1 A B 2 2 4 1 3 2)', show(1)))
     expect(match.scores[0]).toMatchObject({
