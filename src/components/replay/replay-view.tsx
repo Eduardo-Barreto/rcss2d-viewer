@@ -5,10 +5,10 @@ import { addressOf, cycleHash, parseDeepLink } from '@/player/deep-link'
 import { cycleAt, frameOfCycle, teamName } from '@/player/format'
 import { momentsOf } from '@/player/moments'
 import { useReplay } from '@/player/store'
-import type { Match } from '@/rcg/types'
 
 import { HelpDialog } from './help-dialog'
 import { Layers } from './layers'
+import { LiveNotice } from './live-controls'
 import { OpenLog } from './open-log'
 import { Panel, PanelToggle, SHEET_SHARE } from './panel/panel'
 import { type Insets, PitchView } from './pitch-view'
@@ -72,36 +72,41 @@ function useFileDrop(): boolean {
 }
 
 /**
- * `?url=` opens a log on arrival and `#t=` seeks once that first log is read. Every log opened
+ * `?url=` opens a log on arrival and `#t=` seeks once that first log is read. `?live=` only
+ * fills in the relay field: a link must not open a connection before the user clicks. Every log opened
  * after it rewrites the whole address, and pausing writes `#t=` back.
  */
 function useDeepLink(): void {
+  const hasMatch = useReplay((s) => s.match !== null)
   const match = useReplay((s) => s.match)
   const url = useReplay((s) => s.url)
+  const live = useReplay((s) => s.live?.url ?? null)
   const playing = useReplay((s) => s.playing)
   const arrival = useRef(parseDeepLink(window.location.search, window.location.hash))
-  const shown = useRef<Match | null>(null)
+  const shown = useRef(false)
 
   useEffect(() => {
-    const first = arrival.current.url
-    if (first !== null && useReplay.getState().status === 'empty') {
-      void useReplay.getState().open({ kind: 'url', url: first })
-    }
+    const first = arrival.current
+    if (useReplay.getState().status !== 'empty') return
+    if (first.live === null && first.url !== null)
+      void useReplay.getState().open({ kind: 'url', url: first.url })
   }, [])
 
+  // Keyed on whether a match is open, not on the match: a live one changes ten times a second.
   useEffect(() => {
     const { pathname } = window.location
-    if (match === null) {
-      if (shown.current !== null) window.history.replaceState(null, '', pathname)
-      shown.current = null
+    const current = useReplay.getState().match
+    if (current === null) {
+      if (shown.current) window.history.replaceState(null, '', pathname)
+      shown.current = false
       return
     }
-    shown.current = match
+    shown.current = true
     const { cycle } = arrival.current
-    arrival.current = { url: null, cycle: null }
-    if (cycle !== null) useReplay.getState().seek(frameOfCycle(match, cycle))
-    window.history.replaceState(null, '', addressOf(pathname, url, cycle))
-  }, [match, url])
+    arrival.current = { url: null, live: null, cycle: null }
+    if (cycle !== null && live === null) useReplay.getState().seek(frameOfCycle(current, cycle))
+    window.history.replaceState(null, '', addressOf(pathname, { url, live }, cycle))
+  }, [hasMatch, url, live])
 
   const wasPlaying = useRef(false)
   useEffect(() => {
@@ -194,6 +199,7 @@ function Stage() {
         className="fixed bottom-safe-3 left-safe-3 flex items-end gap-2 motion-safe:transition-[bottom] motion-safe:duration-240 motion-safe:ease-(--ease-drawer)"
         style={layout.row}
       >
+        <LiveNotice className="absolute bottom-full left-0 mb-2 max-w-full" />
         <Transport className="min-w-0 flex-1" moments={moments}>
           {narrow ? <PanelToggle /> : null}
         </Transport>
@@ -211,6 +217,7 @@ export function ReplayView() {
   const match = useReplay((s) => s.match)
   const narrow = useNarrow()
   const dragging = useFileDrop()
+  const [linkedRelay] = useState(() => parseDeepLink(window.location.search, '').live)
   useDeepLink()
 
   useEffect(() => {
@@ -219,7 +226,7 @@ export function ReplayView() {
 
   return (
     <TooltipProvider delayDuration={TOOLTIP_DELAY_MS}>
-      {status === 'ready' ? <Stage /> : <OpenLog dragging={dragging} />}
+      {status === 'ready' ? <Stage /> : <OpenLog dragging={dragging} relay={linkedRelay} />}
       {status === 'ready' && dragging ? (
         <div
           aria-hidden

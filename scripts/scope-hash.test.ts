@@ -10,8 +10,16 @@ import { join } from 'node:path'
 
 const SCRIPT_PATH = join(import.meta.dir, 'scope-hash.ts')
 
+/**
+ * The environment without `GIT_*`: a git hook exports `GIT_DIR` and friends, and inherited
+ * they would point every command here at the repo running the hook instead of the scratch one.
+ */
+function scratchEnv(): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
+}
+
 function run(command: string, args: string[], cwd: string) {
-  const result = spawnSync(command, args, { cwd, encoding: 'utf8' })
+  const result = spawnSync(command, args, { cwd, encoding: 'utf8', env: scratchEnv() })
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')}: ${result.stderr}`)
   return result.stdout.trim()
 }

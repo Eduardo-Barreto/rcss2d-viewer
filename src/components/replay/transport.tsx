@@ -15,6 +15,7 @@ import { type Moment, momentJump } from '@/player/moments'
 import { SPEEDS, useReplay } from '@/player/store'
 
 import { Hint, Island, IslandButton, IslandSeparator } from './island'
+import { LiveControls } from './live-controls'
 import { Timeline } from './timeline'
 
 function jump(moments: Moment[], direction: 1 | -1): void {
@@ -89,7 +90,7 @@ export function Transport({ moments, className, children }: TransportProps) {
   return (
     <Island className={cn('@container flex-col items-stretch gap-1 px-3 pt-2 pb-1', className)}>
       <Timeline moments={moments} />
-      <div className="flex items-center gap-0.5">
+      <div className="flex flex-wrap items-center gap-0.5">
         <Hint label="Lance anterior" shortcut="Shift E">
           <IslandButton aria-label="Lance anterior" onClick={() => jump(moments, -1)}>
             <SkipBack aria-hidden className="size-4" />
@@ -126,6 +127,7 @@ export function Transport({ moments, className, children }: TransportProps) {
         </Hint>
         <IslandSeparator />
         <SpeedMenu />
+        <LiveControls />
         <span className="flex-1" />
         <Clock />
         {children}

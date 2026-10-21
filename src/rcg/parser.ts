@@ -1,9 +1,17 @@
 import { FrameStore } from './columns'
-import { cleanText, messageText, readGraphic, readParams, readTeam } from './lines'
-import { playModeId } from './playmodes'
+import { type TeamLine, cleanText, messageText, readGraphic, readParams, readTeam } from './lines'
+import { BEFORE_KICK_OFF, playModeId } from './playmodes'
 import { Char, RcgError, RcgSyntaxError, Scanner } from './scanner'
-import { readShowBody } from './show'
-import type { GraphicTile, LogMessage, Match, ParamMap, PlayModeChange, ScoreChange } from './types'
+import { type ShowExtras, readShowBody } from './show'
+import type {
+  FrameColumns,
+  GraphicTile,
+  LogMessage,
+  Match,
+  ParamMap,
+  PlayModeChange,
+  ScoreChange,
+} from './types'
 
 /** Hard limits on what one log may contain. Past any of them the log is refused. */
 export interface RcgLimits {
@@ -41,6 +49,31 @@ export const DEFAULT_LIMITS: RcgLimits = {
 
 const FIRST_TEXT_VERSION = 4
 const LAST_TEXT_VERSION = 6
+/** Log version whose lines match what monitor protocol 5 sends (`src/logger.cpp:166-170`). */
+const MONITOR_LOG_VERSION = 6
+const TIME_OVER = playModeId('time_over')
+
+/** Where the lines come from. */
+export type LineSource = 'file' | 'monitor'
+
+/**
+ * What arrived since the last {@link RcgParser.drain}: the frames from `from` on (a frame
+ * already sent may be in it again, rewritten) and the entries added after the last drain.
+ */
+export interface MatchDelta {
+  from: number
+  frames: FrameColumns
+  leftName: string
+  rightName: string
+  playmodes: PlayModeChange[]
+  scores: ScoreChange[]
+  messages: LogMessage[]
+  /** Every logo tile, only when one changed. */
+  graphics: Match['graphics'] | null
+  /** The parameter blocks, only when one changed. */
+  params: Pick<Match, 'serverParams' | 'playerParams' | 'playerTypes'> | null
+  skippedLines: number
+}
 const HEADER = /^ULG(?<version>\d+)\s*$/
 
 /**
@@ -84,12 +117,23 @@ export class RcgParser {
   private serverParams: ParamMap = new Map()
   private playerParams: ParamMap = new Map()
   private readonly playerTypes: ParamMap[] = []
+  private readonly sent = { frames: 0, playmodes: 0, scores: 0, messages: 0 }
+  private dirtyFrom = 0
+  private graphicsChanged = false
+  private paramsChanged = false
 
   private readonly limits: RcgLimits
+  private readonly source: LineSource
 
-  constructor(limits: RcgLimits = DEFAULT_LIMITS) {
+  /**
+   * A `'file'` parser expects the `ULG` header first. A `'monitor'` parser reads what a monitor
+   * connection sends, which has no header and repeats the frame while the clock is stopped.
+   */
+  constructor(limits: RcgLimits = DEFAULT_LIMITS, source: LineSource = 'file') {
     this.limits = limits
+    this.source = source
     this.store = new FrameStore(limits.maxFrames)
+    if (source === 'monitor') this.version = MONITOR_LOG_VERSION
   }
 
   /**
@@ -149,7 +193,11 @@ export class RcgParser {
     else if (kind === 'player_param') this.playerParams = readParams(s)
     else if (kind === 'player_type' && this.playerTypes.length < MAX_PLAYER_TYPES) {
       this.playerTypes.push(readParams(s))
-    } else this.skippedLines++
+    } else {
+      this.skippedLines++
+      return
+    }
+    this.paramsChanged = true
   }
 
   private show(s: Scanner): void {
@@ -158,51 +206,79 @@ export class RcgParser {
     if (frame === -1) {
       throw new RcgError(`O log passa de ${this.limits.maxFrames} quadros.`)
     }
+    let extras
     try {
-      readShowBody(s, this.store, frame)
+      extras = readShowBody(s, this.store, frame)
     } catch (error) {
       this.store.dropLast()
       throw error
     }
+    const events = this.playmodes.length + this.scores.length
+    this.applyExtras(cycle, extras, frame)
     const f = this.store.columns
     f.cycle[frame] = cycle
     f.playmode[frame] = this.mode
     f.scoreLeft[frame] = this.score?.left ?? 0
     f.scoreRight[frame] = this.score?.right ?? 0
+    if (this.playmodes.length + this.scores.length === events) this.collapse(frame)
   }
 
-  private playmode(s: Scanner): void {
-    const cycle = s.int(0, MAX_CYCLE)
-    const name = s.token()
-    const mode = playModeId(name)
-    if (mode === undefined) {
-      this.skippedLines++
-      return
-    }
+  private applyExtras(cycle: number, extras: ShowExtras, frame: number): void {
+    if (extras.mode !== null && extras.mode !== this.mode) this.setMode(cycle, extras.mode, frame)
+    if (extras.team !== null) this.setTeam(cycle, extras.team, true)
+  }
+
+  /**
+   * Before the kick-off and after the end, `Stadium::step` leaves the cycle alone
+   * (`src/stadium.cpp:815-819`, `860-863`) but still sends the frame (`src/stadium.cpp:890`):
+   * outside synch mode, with the default 100 ms `simulator_step`, a monitor gets the same cycle
+   * ten times a second until the kick-off or `game_over_wait`. A monitor keeps one frame for
+   * it, so a session left waiting does not fill the frame limit.
+   */
+  private collapse(frame: number): void {
+    const f = this.store.columns
+    const previous = frame - 1
+    if (this.source !== 'monitor' || previous < 0) return
+    if (this.mode !== BEFORE_KICK_OFF && this.mode !== TIME_OVER) return
+    if (f.cycle[previous] !== f.cycle[frame] || f.playmode[previous] !== this.mode) return
+    this.store.copyFrame(frame, previous)
+    this.store.dropLast()
+    this.dirtyFrom = Math.min(this.dirtyFrom, previous)
+  }
+
+  private setMode(cycle: number, mode: number, frame: number): void {
     this.mode = mode
     if (this.playmodes.length >= this.limits.maxEvents) {
       this.skippedLines++
       return
     }
-    this.playmodes.push({ frame: this.store.count, cycle, mode })
+    this.playmodes.push({ frame, cycle, mode })
+  }
+
+  private playmode(s: Scanner): void {
+    const cycle = s.int(0, MAX_CYCLE)
+    const mode = playModeId(s.token())
+    if (mode === undefined) {
+      this.skippedLines++
+      return
+    }
+    this.setMode(cycle, mode, this.store.count)
   }
 
   private team(s: Scanner): void {
     const cycle = s.int(0, MAX_CYCLE)
-    const { leftName, rightName, scores } = readTeam(s)
-    this.leftName = leftName || this.leftName
-    this.rightName = rightName || this.rightName
-    const [left = 0, right = 0, penLeft = 0, missLeft = 0, penRight = 0, missRight = 0] = scores
-    const change: ScoreChange = {
-      frame: this.store.count,
-      cycle,
-      left,
-      right,
-      penaltiesLeft: penLeft,
-      penaltiesRight: penRight,
-      penaltyMissesLeft: missLeft,
-      penaltyMissesRight: missRight,
-    }
+    this.setTeam(cycle, readTeam(s), false)
+  }
+
+  /**
+   * Records a team line. From inside a show it is the frame being read and only a change is
+   * kept, since every monitor show repeats it.
+   */
+  private setTeam(cycle: number, line: TeamLine, inShow: boolean): void {
+    this.leftName = line.leftName || this.leftName
+    this.rightName = line.rightName || this.rightName
+    const change = scoreChange(this.store.count - (inShow ? 1 : 0), cycle, line.scores)
+    if (inShow && this.score !== null && sameScore(this.score, change)) return
     this.score = change
     if (this.scores.length >= this.limits.maxEvents) {
       this.skippedLines++
@@ -220,6 +296,7 @@ export class RcgParser {
       const tiles = this.graphics[graphic.side]
       if (tiles.size < MAX_TILES_PER_SIDE) {
         tiles.set(`${graphic.tile.x},${graphic.tile.y}`, graphic.tile)
+        this.graphicsChanged = true
       }
       return
     }
@@ -235,15 +312,67 @@ export class RcgParser {
     })
   }
 
+  /** Frames read so far. */
+  get frameCount(): number {
+    return this.store.count
+  }
+
+  /** Lines skipped so far, because they did not parse or went past a limit. */
+  get skipped(): number {
+    return this.skippedLines
+  }
+
+  /** Hands over what arrived since the last call, or null when nothing did. */
+  drain(): MatchDelta | null {
+    const { sent } = this
+    const count = this.store.count
+    const from = Math.min(sent.frames, this.dirtyFrom, count)
+    const changed =
+      from < count ||
+      this.playmodes.length > sent.playmodes ||
+      this.scores.length > sent.scores ||
+      this.messages.length > sent.messages ||
+      this.graphicsChanged ||
+      this.paramsChanged
+    if (!changed) return null
+    const delta: MatchDelta = {
+      from,
+      frames: this.store.slice(from),
+      leftName: this.leftName,
+      rightName: this.rightName,
+      playmodes: this.playmodes.slice(sent.playmodes),
+      scores: this.scores.slice(sent.scores),
+      messages: this.messages.slice(sent.messages),
+      graphics: this.graphicsChanged ? this.graphicsList() : null,
+      params: this.paramsChanged
+        ? {
+            serverParams: this.serverParams,
+            playerParams: this.playerParams,
+            playerTypes: [...this.playerTypes],
+          }
+        : null,
+      skippedLines: this.skippedLines,
+    }
+    this.sent.frames = count
+    this.sent.playmodes = this.playmodes.length
+    this.sent.scores = this.scores.length
+    this.sent.messages = this.messages.length
+    this.dirtyFrom = count
+    this.graphicsChanged = false
+    this.paramsChanged = false
+    return delta
+  }
+
+  private graphicsList(): Match['graphics'] {
+    return { l: [...this.graphics.l.values()], r: [...this.graphics.r.values()] }
+  }
+
   /** Closes the log and returns the match. Fails if no frame was read. */
   finish(): Match {
     if (this.version === 0) throw new RcgError('O arquivo está vazio.')
     if (this.store.count === 0) throw new RcgError('O log não tem nenhum quadro (show).')
     const last = this.store.count - 1
-    const clamp = <T extends { frame: number }>(entry: T): T => ({
-      ...entry,
-      frame: Math.min(entry.frame, last),
-    })
+    const clamp = clampTo(last)
     return {
       version: this.version,
       leftName: this.leftName,
@@ -252,13 +381,43 @@ export class RcgParser {
       playmodes: this.playmodes.map(clamp),
       scores: this.scores.map(clamp),
       messages: this.messages.map(clamp),
-      graphics: { l: [...this.graphics.l.values()], r: [...this.graphics.r.values()] },
+      graphics: this.graphicsList(),
       serverParams: this.serverParams,
       playerParams: this.playerParams,
       playerTypes: this.playerTypes,
       skippedLines: this.skippedLines,
     }
   }
+}
+
+function scoreChange(frame: number, cycle: number, scores: number[]): ScoreChange {
+  const [left = 0, right = 0, penLeft = 0, missLeft = 0, penRight = 0, missRight = 0] = scores
+  return {
+    frame,
+    cycle,
+    left,
+    right,
+    penaltiesLeft: penLeft,
+    penaltiesRight: penRight,
+    penaltyMissesLeft: missLeft,
+    penaltyMissesRight: missRight,
+  }
+}
+
+function sameScore(a: ScoreChange, b: ScoreChange): boolean {
+  return (
+    a.left === b.left &&
+    a.right === b.right &&
+    a.penaltiesLeft === b.penaltiesLeft &&
+    a.penaltiesRight === b.penaltiesRight &&
+    a.penaltyMissesLeft === b.penaltyMissesLeft &&
+    a.penaltyMissesRight === b.penaltyMissesRight
+  )
+}
+
+/** Pulls an entry that points past the last frame back onto it. */
+export function clampTo(last: number): <T extends { frame: number }>(entry: T) => T {
+  return (entry) => ({ ...entry, frame: Math.min(entry.frame, last) })
 }
 
 /** Parses a whole log held in memory. Meant for tests and small inputs. */

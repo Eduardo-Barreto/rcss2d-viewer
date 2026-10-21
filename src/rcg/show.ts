@@ -1,10 +1,14 @@
 import type { FrameStore } from './columns'
+import { type TeamLine, readTeam } from './lines'
+import { PLAYMODES } from './playmodes'
 import { Char, type Scanner } from './scanner'
 import { BALL_STRIDE, COUNTERS, type FrameColumns, PLAYERS_PER_SIDE, SLOT_COUNT } from './types'
 
 const MAX_PLAYER_TYPE = 127
 const MAX_STATE = 0xffffffff
 const BALL_TAG = '((b)'
+const PM_TAG = '(pm '
+const TM_TAG = '(tm '
 const CHAR_ZERO = 48
 const CHAR_NINE = 57
 const CHAR_MINUS = 45
@@ -107,14 +111,25 @@ function readBall(s: Scanner, f: FrameColumns, frame: number): void {
   s.expect(Char.CLOSE)
 }
 
+/** What a show line says beyond the frame itself, when it carries it. */
+export interface ShowExtras {
+  /** Play mode id from `(pm N)`, or null when the line has none. */
+  mode: number | null
+  /** Teams and score from `(tm ...)`, or null when the line has none. */
+  team: TeamLine | null
+}
+
 /**
  * Reads the body of a `(show <time> ...)` line after the time, following
- * `DispSenderLoggerV4::sendShow` (rcssserver `src/dispsender.cpp:1002`). Older lines can carry
- * `(pm ...)` and `(tm ...)`, which librcsc's `parser_v4.cpp:406` accepts; they are skipped
- * because the `(playmode ...)` and `(team ...)` lines already say the same.
+ * `DispSenderLoggerV4::sendShow` (rcssserver `src/dispsender.cpp:1002`). A monitor connection
+ * gets the same body from `DispSenderMonitorV3::sendShow` (`src/dispsender.cpp:443`) with
+ * `(pm N)` and `(tm ...)` up front, the only place a live monitor learns the play mode and the
+ * score: `Monitor::sendPlayMode` and `sendScore` (`src/monitor.cpp:190-221`) are never called.
+ * Files from version 4 on carry those in their own lines instead.
  */
-export function readShowBody(s: Scanner, store: FrameStore, frame: number): void {
+export function readShowBody(s: Scanner, store: FrameStore, frame: number): ShowExtras {
   const f = store.columns
+  const extras: ShowExtras = { mode: null, team: null }
   let sawBall = false
   while (s.peek() === Char.OPEN) {
     if (s.startsWith(BALL_TAG)) {
@@ -122,6 +137,13 @@ export function readShowBody(s: Scanner, store: FrameStore, frame: number): void
       sawBall = true
     } else if (s.startsWith('((')) {
       readPlayer(s, f, frame)
+    } else if (s.startsWith(PM_TAG)) {
+      s.pos += PM_TAG.length
+      extras.mode = s.int(0, PLAYMODES.length - 1)
+      s.expect(Char.CLOSE)
+    } else if (s.startsWith(TM_TAG)) {
+      s.pos += TM_TAG.length
+      extras.team = readTeam(s)
     } else {
       s.pos++
       s.skipGroup()
@@ -129,4 +151,5 @@ export function readShowBody(s: Scanner, store: FrameStore, frame: number): void
   }
   s.expect(Char.CLOSE)
   if (!sawBall) s.fail('quadro sem bola')
+  return extras
 }

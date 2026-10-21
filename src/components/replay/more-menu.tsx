@@ -1,4 +1,4 @@
-import { CircleHelp, Crosshair, Ellipsis, ImageDown, Moon, Sun } from 'lucide-react'
+import { CircleHelp, Crosshair, Ellipsis, ImageDown, Moon, Sun, Unplug } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
 import {
@@ -12,21 +12,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useReplay } from '@/player/store'
 
+import { download } from './download'
 import { Hint, IslandButton } from './island'
-
-const REVOKE_AFTER_MS = 1000
 
 function exportImage(): void {
   const { match, frame, name } = useReplay.getState()
   const cycle = match?.frames.cycle[Math.round(frame)] ?? 0
   const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-pitch]')
   canvas?.toBlob((blob) => {
-    if (blob === null) return
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `${name.replace(/\.rcg(?:\.gz)?$/i, '')}-ciclo-${cycle}.png`
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(link.href), REVOKE_AFTER_MS)
+    if (blob !== null) download(blob, `${name.replace(/\.rcg(?:\.gz)?$/i, '')}-ciclo-${cycle}.png`)
   }, 'image/png')
 }
 
@@ -43,6 +37,8 @@ export function MoreMenu({ onHelp, follow = false }: MoreMenuProps) {
   const dark = resolvedTheme === 'dark'
   const following = useReplay((s) => s.follow === 'ball')
   const setFollow = useReplay((s) => s.setFollow)
+  const connected = useReplay((s) => s.live !== null && s.live.phase !== 'ended')
+  const disconnect = useReplay((s) => s.disconnect)
 
   return (
     <DropdownMenu>
@@ -63,6 +59,15 @@ export function MoreMenu({ onHelp, follow = false }: MoreMenuProps) {
               <Crosshair aria-hidden />
               Seguir a bola
             </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
+        {connected ? (
+          <>
+            <DropdownMenuItem onSelect={disconnect}>
+              <Unplug aria-hidden />
+              Desconectar
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         ) : null}

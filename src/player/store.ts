@@ -2,11 +2,15 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 import { type Analysis, analyzeMatch } from '@/analysis/analyze'
+import type { LiveConnection, LiveHandlers } from '@/rcg/live'
 import { loadMatch } from '@/rcg/load'
+import type { LiveEnd } from '@/rcg/protocol'
 import { RcgError } from '@/rcg/scanner'
 import { type LogSource, sourceName } from '@/rcg/source'
 import type { Match } from '@/rcg/types'
 import type { Overlays } from '@/render/scene'
+
+import { leaveLive, liveActions } from './live-actions'
 
 const SLOWEST_DOUBLING = -2
 const FASTEST_DOUBLING = 4
@@ -29,6 +33,19 @@ export type PanelTab = 'stats' | 'events' | 'player' | 'messages' | 'params'
 /** Where the log is in its life. */
 type LoadStatus = 'empty' | 'loading' | 'ready' | 'error'
 
+/** A live session: where it comes from and how it is going. */
+export interface LiveState {
+  url: string
+  phase: 'connecting' | 'open' | 'ended'
+  server: 'up' | 'down'
+  end: LiveEnd | null
+  /** The playhead sticks to the newest frame. */
+  following: boolean
+}
+
+/** Opens a live session; the real one runs in the parser worker, tests pass a fake. */
+type LiveConnector = (url: string, handlers: LiveHandlers) => LiveConnection
+
 /** The replay: the loaded match, the playhead and every view choice. */
 export interface ReplayState {
   status: LoadStatus
@@ -39,6 +56,8 @@ export interface ReplayState {
   url: string | null
   match: Match | null
   analysis: Analysis | null
+  /** The live session, `null` for a log read from a file or URL. */
+  live: LiveState | null
   /** Playhead, a frame index that may fall between two frames. */
   frame: number
   playing: boolean
@@ -53,6 +72,16 @@ export interface ReplayState {
   open: (source: LogSource) => Promise<void>
   show: (match: Match, name: string, url?: string | null) => void
   close: () => void
+  /** Connects to a relay, once the address passes `checkLiveUrl`. */
+  connect: (url: string, connector?: LiveConnector) => void
+  /** Leaves the live session and keeps the frames that arrived. */
+  disconnect: () => void
+  /** The live match so far as a gzipped `.rcg`, null when it cannot be saved. */
+  saveLive: () => Promise<Blob | null>
+  /** Asks the server to start the match. */
+  kickOff: () => void
+  /** Jumps to the newest frame and sticks to it. */
+  followLive: () => void
   /** Drops a failed read's message, back to the empty open screen. */
   clearError: () => void
   seek: (frame: number) => void
@@ -78,7 +107,8 @@ const DEFAULT_OVERLAYS: Overlays = {
 }
 
 const NORMAL_SPEED = 1
-const EMPTY = {
+/** State of a viewer with nothing open. */
+export const EMPTY = {
   status: 'empty' as LoadStatus,
   progress: { loaded: 0, total: null },
   error: null,
@@ -86,15 +116,26 @@ const EMPTY = {
   url: null,
   match: null,
   analysis: null,
+  live: null,
   frame: 0,
   playing: false,
   selected: -1,
 }
 
 let pending: AbortController | null = null
-
-function lastFrame(match: Match | null): number {
+/** Index of the newest frame, 0 with no match. */
+export function lastFrame(match: Match | null): number {
   return match === null ? 0 : match.frames.count - 1
+}
+
+function isLive(live: LiveState | null): boolean {
+  return live !== null && live.phase !== 'ended'
+}
+
+/** The live state with the playhead stuck to the newest frame or not; nothing changes once over. */
+function following(live: LiveState | null, stick: boolean): LiveState | null {
+  if (live === null || !isLive(live) || live.following === stick) return live
+  return { ...live, following: stick }
 }
 
 function clampFrame(match: Match | null, frame: number): number {
@@ -152,31 +193,43 @@ export const useReplay = create<ReplayState>()(
       close() {
         pending?.abort()
         pending = null
+        leaveLive()
         set(EMPTY)
       },
 
+      ...liveActions(set, get),
+
       seek(frame) {
-        set({ frame: clampFrame(get().match, frame) })
+        const { match, live } = get()
+        const at = clampFrame(match, frame)
+        set({ frame: at, live: following(live, at >= lastFrame(match)) })
       },
 
       step(frames) {
-        const { match, frame } = get()
-        set({ playing: false, frame: clampFrame(match, Math.round(frame) + frames) })
+        const { match, frame, live } = get()
+        const at = clampFrame(match, Math.round(frame) + frames)
+        set({ playing: false, frame: at, live: following(live, at >= lastFrame(match)) })
       },
 
       advance(ms) {
-        const { match, analysis, frame, speed, playing } = get()
+        const { match, analysis, frame, speed, playing, live } = get()
         if (!playing || match === null || analysis === null) return
         const next = clampFrame(match, frame + (ms / analysis.physics.stepMs) * speed)
         const last = lastFrame(match)
-        set(next >= last ? { frame: last, playing: false } : { frame: next })
+        if (next < last) set({ frame: next })
+        else set({ frame: last, playing: false, live: following(live, true) })
       },
 
       togglePlay() {
-        const { match, frame, playing } = get()
+        const { match, frame, playing, live } = get()
         if (match === null) return
         const atEnd = frame >= lastFrame(match)
-        set({ playing: !playing, frame: !playing && atEnd ? 0 : frame })
+        if (atEnd && isLive(live)) return
+        set({
+          playing: !playing,
+          frame: !playing && atEnd ? 0 : frame,
+          live: following(live, false),
+        })
       },
 
       setSpeed(speed) {

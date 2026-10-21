@@ -1,4 +1,4 @@
-import type { LoadReply, LoadRequest } from './protocol'
+import type { LoadReply, WorkerRequest } from './protocol'
 import { RcgError } from './scanner'
 import type { LogSource } from './source'
 import type { Match } from './types'
@@ -37,7 +37,7 @@ export function loadMatch(
     worker.terminate()
     reject(new RcgError('O leitor de logs parou de responder.'))
   })
-  const request: LoadRequest = { source }
+  const request: WorkerRequest = { kind: 'load', source }
   worker.postMessage(request, [])
   return promise
 }

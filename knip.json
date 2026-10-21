@@ -1,7 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/**/*.test.{ts,tsx}", "src/test/matchers.d.ts"],
-  "project": ["src/**/*.{ts,tsx}"],
+  "entry": [
+    "src/**/*.test.{ts,tsx}",
+    "src/test/matchers.d.ts",
+    "relay/main.ts",
+    "e2e/live-server.ts",
+    "relay/**/*.test.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "relay/**/*.ts", "e2e/**/*.ts"],
   "ignore": ["src/components/ui/**"],
   "ignoreDependencies": [
     "tailwindcss",

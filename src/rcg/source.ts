@@ -24,6 +24,32 @@ export function checkLogUrl(raw: string): URL {
   return url
 }
 
+/** The loopback hosts the CSP lets a page reach over plain `ws`; CSP has no IPv6 literal. */
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost'])
+
+/**
+ * Checks a relay address for the live mode. `wss` goes anywhere; plain `ws` only to this
+ * machine, which browsers treat as a secure context and let an https page reach. No user and
+ * password, and no fragment, which a WebSocket URL may not have.
+ */
+export function checkLiveUrl(raw: string): URL {
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    throw new RcgError('Endereço inválido.')
+  }
+  const local = url.protocol === 'ws:' && LOOPBACK_HOSTS.has(url.hostname)
+  if (url.protocol !== 'wss:' && !local) {
+    throw new RcgError('Só aceito wss://, ou ws:// em 127.0.0.1 ou localhost.')
+  }
+  if (url.username !== '' || url.password !== '') {
+    throw new RcgError('O endereço não pode ter usuário e senha.')
+  }
+  if (url.hash !== '') throw new RcgError('O endereço não pode ter #.')
+  return url
+}
+
 const MAX_NAME_LENGTH = 200
 const INVISIBLE = /[\p{Cc}\p{Cf}]/gu
 
