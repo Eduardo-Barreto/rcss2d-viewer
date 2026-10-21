@@ -20,7 +20,7 @@ O `.rcg` vem de fora, então é dado não confiável.
 - O parser tem limites explícitos (tamanho descomprimido, tamanho de linha, número de quadros) e recusa o que passa deles com mensagem clara, sem travar a aba.
 - A descompressão conta bytes enquanto lê e para no limite, para uma bomba de gzip não estourar a memória.
 - A CSP fica em `public/_headers`. Afrouxar a CSP pede ADR. O `ws://` de loopback entrou pelo ADR 0004.
-- A ponte só escuta em loopback, confere o `Origin` e só repassa `(dispstart)` e `(dispbye)`. Comando novo para o servidor pede ADR.
+- A ponte só escuta em loopback, confere o `Origin` e da página só aceita `(dispstart)`, que repassa, e `(dispbye)`, que fecha aquela aba. Comando novo para o servidor pede ADR.
 
 ## Comandos
 

@@ -8,11 +8,11 @@ O viewer lia só arquivo. Para acompanhar uma partida enquanto ela roda, ele pre
 
 O que o servidor 19.0.0 manda, lido no código:
 
-- `Monitor::setSenders` (`src/monitor.cpp:120`) aceita as versões 1 a 5 e -1 (JSON). A versão 5 é a mais nova em texto e escreve as mesmas linhas que o logger põe num `.rcg` v6 (`src/logger.cpp:166-170` usa monitor = log - 1; `src/dispsender.cpp:1137-1142`, `src/initsendermonitor.cpp:378-383`).
+- `Monitor::setSenders` (`src/monitor.cpp:120`) aceita as versões 1 a 5 e -1 (JSON), registradas em `src/serializermonitor.cpp:850-855`. A versão 5 é a mais nova em texto e escreve as mesmas linhas que o logger põe num `.rcg` v6 (`src/logger.cpp:166-170` usa monitor = log - 1; `src/dispsender.cpp:1137-1142`, `src/initsendermonitor.cpp:378-383`).
 - Cada quadro vem como `(show T (pm N) (tm L R sl sr) ...)` (`DispSenderMonitorV3::sendShow`, `src/dispsender.cpp:443-501`), terminado em `\0`. No log, modo de jogo e placar vêm em linhas próprias; no monitor, dentro do `show`. `Monitor::sendPlayMode` e `sendScore` (`src/monitor.cpp:190-221`) nunca são chamados.
 - Mensagens chegam como `(msg T board "texto")` (`src/dispsender.cpp:504-512`).
-- O monitor manda `(dispstart)` e `(dispbye)`, comparados por igualdade exata (`Monitor::parseCommand`, `src/monitor.cpp:339-410`). `Stadium::kickOff` (`src/stadium.cpp:1049`) não confere o modo de jogo, então quem filtra é a ponte.
-- Antes da saída de bola e depois do fim, o servidor repete o mesmo ciclo 10 vezes por segundo (`src/stadium.cpp:815-821`).
+- O monitor manda `(dispstart)` e `(dispbye)`, comparados por igualdade exata (`Monitor::parseCommand`, `src/monitor.cpp:339-410`). `Stadium::kickOff` (`src/stadium.cpp:1049`) confere só se o relógio está no começo de um tempo (`src/stadium.cpp:1060-1067`), não o modo de jogo, então quem filtra é a ponte.
+- Antes da saída de bola e depois do fim, `Stadium::step` não avança o ciclo, só o tempo parado (`src/stadium.cpp:815-819` e `860-863`), mas manda o quadro mesmo assim (`src/stadium.cpp:890`). Fora do modo síncrono, com o `simulator_step` padrão de 100 ms, o monitor recebe o mesmo ciclo 10 vezes por segundo. Isso dura enquanto o servidor espera a saída e, no fim, até o `game_over_wait`.
 
 ## Decisão
 
@@ -23,7 +23,7 @@ Na ponte:
 - Escuta só em loopback. `--allow-remote` abre para fora com aviso no log.
 - `Origin` em lista: o viewer, as prévias do Pages e o servidor de dev local. Sem `Origin` só com `--allow-no-origin`.
 - Da página para o servidor passam só `(dispstart)` e `(dispbye)`, inteiros, com limite de tamanho e de frequência. `(dispstart)` só sai com o último quadro em `before_kick_off`. Sem exec, sem arquivo, sem eval.
-- Uma sessão de monitor serve todas as abas. Quem chega depois recebe parâmetros, logos e o último quadro. Quando a última aba sai a ponte manda `(dispbye)` e esquece a sessão. Se o servidor some, ela tenta de novo a cada segundo; uma sessão nova de servidor aparece para a página como `session` maior no status.
+- Uma sessão de monitor serve todas as abas. Quem chega depois recebe parâmetros, logos e o último quadro. O `(dispbye)` de uma página fecha só a aba dela; quando a última aba sai, a ponte manda `(dispbye)` ao servidor e esquece a sessão. Se o servidor fica 3 s calado, a página vê o servidor como fora, mas a sessão continua: um servidor travado que volta segue mandando para o mesmo monitor. Só depois de 30 s calado a ponte manda `(dispinit)` de novo, porque com `max_monitors=-1` cada `(dispinit)` cria mais um monitor (`src/stadium.cpp:2790`). Uma sessão nova de servidor aparece para a página como `session` maior no status.
 
 Na página:
 
@@ -54,6 +54,7 @@ Saiu `upgrade-insecure-requests`: ele troca `ws:` por `wss:` sem exceção para 
 
 ## Consequências
 
-- Rodar o rcssserver em Docker com a porta 6000 publicada não basta: a resposta sai da porta dedicada, que o NAT não devolve. Ponte e servidor precisam ver um ao outro direto (mesma máquina sem container ou a mesma rede Docker). `just live-smoke` faz o segundo jeito.
+- Rodar o rcssserver em Docker com a porta 6000 publicada não basta: a resposta sai da porta dedicada, que o NAT não devolve. Ponte e servidor precisam ver um ao outro direto. O jeito padrão é o servidor em container e a ponte na mesma rede Docker, como faz `just live-smoke`; servidor e ponte direto na mesma máquina também funciona.
 - Aba que chega tarde recebe parâmetros, logos e o último quadro, mas não o que passou antes dela. O histórico fica com a aba que já estava aberta.
+- O `.rcg` salvo da página guarda um quadro de `before_kick_off`, que o logger do servidor pula (`src/logger.cpp:767-768`). O parser lê os dois.
 - Sem Safari.

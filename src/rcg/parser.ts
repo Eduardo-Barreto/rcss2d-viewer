@@ -229,9 +229,11 @@ export class RcgParser {
   }
 
   /**
-   * While the clock is stopped before the kick-off or after the end, the server steps and sends
-   * the same cycle ten times a second (`src/stadium.cpp:815-821`). A monitor keeps one frame
-   * for it, so a session left waiting does not fill the frame limit.
+   * Before the kick-off and after the end, `Stadium::step` leaves the cycle alone
+   * (`src/stadium.cpp:815-819`, `860-863`) but still sends the frame (`src/stadium.cpp:890`):
+   * outside synch mode, with the default 100 ms `simulator_step`, a monitor gets the same cycle
+   * ten times a second until the kick-off or `game_over_wait`. A monitor keeps one frame for
+   * it, so a session left waiting does not fill the frame limit.
    */
   private collapse(frame: number): void {
     const f = this.store.columns
