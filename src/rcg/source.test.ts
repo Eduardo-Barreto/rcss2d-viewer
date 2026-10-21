@@ -1,7 +1,33 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 
 import { RcgError } from './scanner'
-import { checkLogUrl, sourceName } from './source'
+import { checkLogUrl, openSource, sourceName } from './source'
+
+const realFetch = globalThis.fetch
+
+function serve(body: Uint8Array, headers: Record<string, string>): void {
+  const reply = () => Promise.resolve(new Response(new Blob([new Uint8Array(body)]), { headers }))
+  globalThis.fetch = Object.assign(reply, { preconnect: realFetch.preconnect })
+}
+
+async function drain(stream: ReadableStream<Uint8Array>): Promise<number> {
+  let total = 0
+  for await (const chunk of stream) total += chunk.byteLength
+  return total
+}
+
+async function failure(pending: Promise<unknown>): Promise<unknown> {
+  try {
+    await pending
+  } catch (error) {
+    return error
+  }
+  return null
+}
+
+afterEach(() => {
+  globalThis.fetch = realFetch
+})
 
 describe('checkLogUrl', () => {
   test('accepts https only', () => {
@@ -25,10 +51,45 @@ describe('sourceName', () => {
     expect(sourceName({ kind: 'url', url: 'https://x.dev/' })).toBe('https://x.dev/')
   })
 
+  test('drops bidi and other format characters', () => {
+    expect(sourceName({ kind: 'file', file: new Blob(), name: 'jogo\u202Egpj.rcg' })).toBe(
+      'jogogpj.rcg',
+    )
+    expect(sourceName({ kind: 'url', url: 'https://x.dev/a%E2%80%8Bb.rcg' })).toBe('ab.rcg')
+  })
+
   test('never throws on a bad address', () => {
     expect(sourceName({ kind: 'url', url: 'nope' })).toBe('nope')
     expect(sourceName({ kind: 'url', url: 'https://x.dev/%E0%A4%A' })).toBe(
       'https://x.dev/%E0%A4%A',
     )
+  })
+})
+
+describe('openSource', () => {
+  const url = { kind: 'url', url: 'https://x.dev/a.rcg' } as const
+
+  test('refuses up front when the length says it is too big', async () => {
+    serve(new Uint8Array(10), { 'content-length': '10' })
+    expect(await failure(openSource(url, undefined, 4))).toBeInstanceOf(RcgError)
+  })
+
+  test('stops a body with no length once it passes the limit', async () => {
+    serve(new Uint8Array(10), {})
+    const { stream, size } = await openSource(url, undefined, 4)
+    expect(size).toBeNull()
+    expect(String(await failure(drain(stream)))).toMatch(/256 MB/)
+  })
+
+  test('reads a body within the limit', async () => {
+    serve(new Uint8Array(10), { 'content-length': '10' })
+    const { stream, size } = await openSource(url, undefined, 64)
+    expect(size).toBe(10)
+    expect(await drain(stream)).toBe(10)
+  })
+
+  test('does not trust the length of an encoded body for progress', async () => {
+    serve(new Uint8Array(10), { 'content-length': '3', 'content-encoding': 'gzip' })
+    expect((await openSource(url, undefined, 64)).size).toBeNull()
   })
 })

@@ -4,7 +4,7 @@ O viewer é um site estático. Quem abre escolhe um `.rcg`, o navegador lê, ana
 
 ## Caminho de um log
 
-1. **Origem** (`src/rcg/source.ts`). Arquivo local (seletor ou arrastar e soltar) ou endereço `https` (campo da tela inicial ou `?url=`). O endereço passa por `checkLogUrl`: só `https`, sem usuário e senha. O `fetch` vai sem cookie e sem referrer. Acima de 256 MB o viewer recusa antes de ler.
+1. **Origem** (`src/rcg/source.ts`). Arquivo local (seletor ou arrastar e soltar) ou endereço `https` (campo da tela inicial ou `?url=`). O endereço passa por `checkLogUrl`: só `https`, sem usuário e senha. O `fetch` vai sem cookie e sem referrer. Acima de 256 MB o viewer recusa: antes de ler quando o tamanho é conhecido (arquivo local ou `content-length`), ou assim que o corpo baixado passa disso quando o servidor não diz o tamanho. Com `content-encoding` o `content-length` é do corpo comprimido, então a barra de progresso fica sem total.
 2. **Worker** (`src/rcg/load.ts`, `worker.ts`). Toda a leitura roda num Web Worker, então um log grande não trava a aba. Cancelar mata o worker.
 3. **Descompressão e linhas** (`stream.ts`, `lines.ts`). `.gz` passa pelo `DecompressionStream` do navegador. O leitor conta os bytes descomprimidos e para no limite (512 MiB), o que segura uma bomba de gzip.
 4. **Parser** (`parser.ts`, `show.ts`, `graphic.ts`). Lê as versões de texto 4, 5 e 6 do rcssserver 19.0.0. Os quadros vão para colunas tipadas (`Float32Array`, `Int32Array`), uma por campo, e as colunas voltam ao thread principal por transferência, sem cópia. Limites: 40 mil quadros, 20 mil mensagens, linha de até 1 MiB. Detalhes no [ADR 0002](adr/0002-parser-de-texto-com-limites.md).

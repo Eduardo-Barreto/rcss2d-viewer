@@ -24,8 +24,10 @@ export function checkLogUrl(raw: string): URL {
   return url
 }
 
-/** Display name for a source: the file name, or the last path segment of the URL. */
-export function sourceName(source: LogSource): string {
+const MAX_NAME_LENGTH = 200
+const INVISIBLE = /[\p{Cc}\p{Cf}]/gu
+
+function rawName(source: LogSource): string {
   if (source.kind === 'file') return source.name
   try {
     const path = new URL(source.url).pathname
@@ -35,13 +37,52 @@ export function sourceName(source: LogSource): string {
   }
 }
 
-/** Opens a source as a byte stream plus its size when known. */
+/**
+ * Display name for a source: the file name, or the last path segment of the URL. Control and
+ * format characters go, so a bidi override in a link cannot make `gpj.rcg` read as `rcg.jpg`.
+ */
+export function sourceName(source: LogSource): string {
+  return rawName(source).replace(INVISIBLE, '').slice(0, MAX_NAME_LENGTH)
+}
+
+function tooLarge(): RcgError {
+  return new RcgError('O arquivo passa de 256 MB.')
+}
+
+/** Errors the body once more than `max` bytes arrived, for servers that send no length. */
+function cappedBody(max: number): TransformStream<Uint8Array, Uint8Array> {
+  let total = 0
+  return new TransformStream({
+    transform(chunk, controller) {
+      total += chunk.byteLength
+      if (total > max) controller.error(tooLarge())
+      else controller.enqueue(chunk)
+    },
+  })
+}
+
+/**
+ * Size of the body the stream will deliver, when the headers say. With `content-encoding` the
+ * length is of the encoded bytes while the stream yields decoded ones, so it is unknown.
+ */
+function bodySize(headers: Headers): number | null {
+  const encoding = headers.get('content-encoding')
+  if (encoding !== null && encoding.trim().toLowerCase() !== 'identity') return null
+  const size = Number(headers.get('content-length') ?? Number.NaN)
+  return Number.isFinite(size) && size > 0 ? size : null
+}
+
+/**
+ * Opens a source as a byte stream plus its size when known. Past `maxBytes` (256 MB) the read
+ * fails, checked up front when the size is known and while reading when it is not.
+ */
 export async function openSource(
   source: LogSource,
   signal?: AbortSignal,
+  maxBytes = MAX_INPUT_BYTES,
 ): Promise<{ stream: ReadableStream<Uint8Array>; size: number | null }> {
   if (source.kind === 'file') {
-    if (source.file.size > MAX_INPUT_BYTES) throw new RcgError('O arquivo passa de 256 MB.')
+    if (source.file.size > maxBytes) throw tooLarge()
     return { stream: source.file.stream(), size: source.file.size }
   }
   const url = checkLogUrl(source.url)
@@ -61,7 +102,7 @@ export async function openSource(
   if (!response.ok || response.body === null) {
     throw new RcgError(`O servidor respondeu ${response.status} ao baixar o log.`)
   }
-  const size = Number(response.headers.get('content-length'))
-  if (size > MAX_INPUT_BYTES) throw new RcgError('O arquivo passa de 256 MB.')
-  return { stream: response.body, size: Number.isFinite(size) && size > 0 ? size : null }
+  const size = bodySize(response.headers)
+  if (size !== null && size > maxBytes) throw tooLarge()
+  return { stream: response.body.pipeThrough(cappedBody(maxBytes)), size }
 }
