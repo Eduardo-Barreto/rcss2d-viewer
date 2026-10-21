@@ -44,6 +44,8 @@ export interface Physics {
   /** Kickable margin of each player type id. */
   kickableMargins: number[]
   staminaMax: number
+  /** Milliseconds per cycle, `simulator_step`. */
+  stepMs: number
   /** Cycles in one half, `half_time` scaled as in `ServerParam::getHalfTimeScaler`. */
   halfCycles: number
 }
@@ -63,6 +65,7 @@ export function physicsOf(match: Match): Physics {
       numberParam(type, 'kickable_margin', fallbackMargin),
     ),
     staminaMax: numberParam(server, 'stamina_max', DEFAULT_STAMINA_MAX),
+    stepMs,
     halfCycles: Math.max(1, Math.round((halfSeconds * MS_PER_SECOND) / stepMs)),
   }
 }

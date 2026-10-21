@@ -232,6 +232,7 @@ describe('physicsOf', () => {
     expect(physics.goalWidth).toBe(20)
     expect(physics.ballDecay).toBe(0.94)
     expect(physics.halfCycles).toBe(3000)
+    expect(physics.stepMs).toBe(100)
     expect(physics.kickableMargins).toEqual([0.65])
   })
 })
