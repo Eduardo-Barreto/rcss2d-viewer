@@ -56,3 +56,6 @@ advisor-plans/
 
 # Scratch dir the lint-touched hook test writes into
 tmp-lint-probe/
+
+# wrangler local state
+.wrangler/

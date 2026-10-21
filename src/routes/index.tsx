@@ -1,9 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/')({
-  component: Home,
-})
+import { ReplayView } from '@/components/replay/replay-view'
 
-function Home() {
-  return <h1 className="text-2xl font-semibold tracking-tight">rcss2d-viewer</h1>
-}
+export const Route = createFileRoute('/')({
+  component: ReplayView,
+})

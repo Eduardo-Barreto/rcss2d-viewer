@@ -1,12 +1,9 @@
-import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { ThemeProvider } from 'next-themes'
-import { StrictMode, lazy } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { NotFound, RouteError } from '@/components/route-error'
-import { Toaster } from '@/components/ui/sonner'
-import { queryClient } from '@/lib/query-client'
 
 import { routeTree } from './routeTree.gen'
 
@@ -27,21 +24,10 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const QueryDevtools = import.meta.env.PROD
-  ? () => null
-  : lazy(async () => {
-      const devtools = await import('@tanstack/react-query-devtools')
-      return { default: devtools.ReactQueryDevtools }
-    })
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-        <Toaster />
-        <QueryDevtools buttonPosition="bottom-left" />
-      </QueryClientProvider>
+      <RouterProvider router={router} />
     </ThemeProvider>
   </StrictMode>,
 )
