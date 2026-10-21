@@ -97,7 +97,7 @@ test.describe('Ao vivo', () => {
     await expect(page.getByLabel('Endereço ws:// da ponte')).toHaveValue(RELAY)
     await page.waitForTimeout(1500)
     await expect(page.getByRole('button', { name: 'Conectar' })).toBeVisible()
-    await expect(page.getByText('Ao vivo', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('slider', { name: 'Posição na partida' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Começar partida' })).toHaveCount(0)
   })
 
