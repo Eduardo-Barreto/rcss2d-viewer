@@ -100,7 +100,7 @@ export function LiveFigure() {
 /** The limits that keep a bad file from hurting the tab. */
 export function SafetyFacts() {
   return (
-    <ul className="grid gap-x-8 gap-y-2 text-[15px] leading-6 md:grid-cols-2">
+    <ul className="grid max-w-[720px] gap-x-8 gap-y-2 text-[15px] leading-6 md:grid-cols-2">
       {COPY.safety.facts.map((fact) => (
         <li className="flex items-baseline gap-3" key={fact}>
           <span
