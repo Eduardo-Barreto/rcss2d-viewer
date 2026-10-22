@@ -5,7 +5,10 @@
     "src/test/matchers.d.ts",
     "relay/main.ts",
     "e2e/live-server.ts",
-    "relay/**/*.test.ts"
+    "relay/**/*.test.ts",
+    "src/export/headless.ts",
+    "src/types/gifenc.d.ts",
+    "scripts/clip.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "relay/**/*.ts", "e2e/**/*.ts"],
   "ignore": ["src/components/ui/**"],
@@ -17,5 +20,6 @@
     "shadcn",
     "react-hook-form",
     "@hookform/resolvers"
-  ]
+  ],
+  "ignoreBinaries": ["ffmpeg", "scripts/clip.ts"]
 }

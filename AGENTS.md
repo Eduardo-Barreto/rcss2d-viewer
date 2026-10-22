@@ -27,6 +27,7 @@ O `.rcg` vem de fora, então é dado não confiável.
 - `just` lista as receitas. `just verify` é o gate (lint, format, tipos, knip, testes de unidade, build). `just e2e` roda o Playwright. `just ci` roda os dois. O GitHub Actions roda o mesmo gate, o semgrep e o e2e em todo PR; `just ci` verde é o que se confere antes de pedir merge.
 - `bun run dev` sobe o Vite via portless (`rcss2d-viewer.localhost`). `bun run dev:host` expõe em `0.0.0.0`, que é o que o Playwright usa.
 - `just clip-rcg <entrada.rcg> <de> <até> <saída.rcg.gz>` corta os ciclos `de..até` de um `.rcg` de texto (v4 a v6) num `.rcg.gz`, mantendo o cabeçalho, os logos e o último `playmode` e `team` antes do corte. Imprime uma linha JSON com a saída e o tamanho sem compressão. Foi assim que saiu o trecho da página inicial (`src/components/landing/clip/`); a origem e o comando exato estão no ADR 0005.
+- `just clip <log.rcg[.gz]> <de> <até> [--out f.gif] [--width 720] [--theme dark|light] [--mp4] [--rcg] [--json]` grava os ciclos `de..até` como GIF animado, desenhado pelo renderer do app num Chromium headless (o do e2e: `just install`). Roda na pasta de onde foi chamado. `--json` imprime uma linha com caminho, bytes, quadros, segundos e tempo; `--mp4` precisa do `ffmpeg`; `--rcg` grava o `.rcg.gz` cortado. Erro de uso sai com 2. Ver o ADR 0007.
 - `just deploy` publica no Cloudflare Pages (projeto `rcss2d-viewer`, `rcssviewer.tapout.gg`). Só roda na `main` limpa e igual à `origin/main`, depois de `just ci`.
 
 ## Stack
@@ -40,6 +41,7 @@ Camadas, de baixo para cima, cada uma só importa as de baixo:
 - `src/analysis/`: eventos, posse, passes, chutes, estatísticas e séries derivadas do `Match`. Puro.
 - `src/render/`: desenho do campo no canvas e a câmera. Sem React.
 - `src/player/`: o estado do replay (quadro, velocidade, seleção, camadas).
+- `src/export/`: o GIF de um trecho (quadros, faixa de placar, encoder). Sem React; usa só as funções puras de `player/format.ts`. `headless.ts` é a entrada do `just clip` no Chromium e o único arquivo dela que mexe em DOM.
 - `src/components/` e `src/routes/`: a interface.
 
 ## Convenções

@@ -54,6 +54,17 @@ test.describe('Celular', () => {
     await expect(sheet).toHaveCount(0)
   })
 
+  test('os atalhos continuam valendo com o foco dentro do painel', async ({ page }) => {
+    await openFixture(page)
+    await page.getByRole('button', { name: 'Painel da partida' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Painel da partida' })
+    await sheet.getByRole('tab', { name: 'Servidor' }).focus()
+    await page.keyboard.press('Space')
+    await expect(page.getByRole('button', { name: 'Pausar' })).toBeVisible()
+    await page.keyboard.press('i')
+    await expect(sheet).toHaveCount(0)
+  })
+
   test('guarda tema, imagem, atalhos e seguir a bola no menu', async ({ page }) => {
     await openFixture(page)
     await page.getByRole('button', { name: 'Mais opções' }).click()

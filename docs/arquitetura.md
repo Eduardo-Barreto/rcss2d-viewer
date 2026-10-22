@@ -28,10 +28,10 @@ Navegador: Chrome pede permissão de rede local para a página `https` falar com
 Cada camada importa só as de baixo:
 
 ```
-rcg → analysis → render → player → components, routes
+rcg → analysis → render → player → export → components, routes
 ```
 
-`relay/` roda fora do navegador e não importa nada de `src/`. `rcg`, `analysis` e `render` não importam React nem DOM (o `render` recebe o contexto do canvas pronto). Isso deixa o grosso do código testável com `bun test`, sem navegador.
+`relay/` roda fora do navegador e não importa nada de `src/`. `rcg`, `analysis`, `render` e `export` não importam React nem DOM (`render` e `export` recebem o contexto do canvas pronto). `export` usa só as funções puras de `player/format.ts`, nada do estado. A exceção é `src/export/headless.ts`, a entrada do `just clip` no Chromium, que busca o log e lê o tema da página. Isso deixa o grosso do código testável com `bun test`, sem navegador.
 
 ## De onde vêm os números
 
@@ -43,6 +43,10 @@ rcg → analysis → render → player → components, routes
 - **Impedimento**: a linha do penúltimo defensor, limitada pela bola e pelo meio-campo, como `OffsideRef::setOffsideMark` (`src/referee.cpp:1124`).
 - **Campo**: medidas de `src/serverparam.cpp:132`. Gol, decaimento da bola e tamanho do jogador vêm do `server_param` do próprio log quando existe e está numa faixa que faz sentido (`ball_decay` entre 0 e 1, `simulator_step` positivo, e assim por diante); fora dela vale o padrão do servidor. A margem de chute de cada jogador vem do `player_type` com o mesmo `id`.
 - **Tempos**: a linha do tempo marca o fim de cada tempo a cada `half_time` até `nr_normal_halfs`, depois a cada `extra_half_time` até `nr_extra_halfs`, como o `TimeRef` (`src/referee.cpp:506`). Com `half_time` zero ou negativo o servidor não encerra tempo nenhum, e o viewer não marca nada.
+
+## GIF de um trecho
+
+`src/export/` desenha os ciclos `de..até` com o próprio `drawScene`, um quadro do GIF por quadro do log no tempo real, mais uma faixa com ciclo, placar e modo de jogo, e codifica com o `gifenc`. O app usa isso em "Salvar GIF do lance", no menu de mais opções. `just clip <log> <de> <até>` faz o mesmo num Chromium headless (`src/export/headless.ts`), com `--json`, `--mp4` e `--rcg`. O GIF de 15 s fica abaixo de 1 MB e aparece inline numa issue do GitHub. Ver o [ADR 0007](adr/0007-exportar-trecho.md).
 
 ## Endereços
 

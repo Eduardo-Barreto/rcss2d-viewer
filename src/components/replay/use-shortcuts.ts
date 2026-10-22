@@ -16,9 +16,17 @@ const REPEATABLE = new Set<KeyAction>([
   'zoomOut',
 ])
 
-function typing(target: EventTarget | null): boolean {
+/**
+ * Keys typed into a field or pressed inside a modal dialog belong to them, not to the replay
+ * behind. The phone panel is a non-modal sheet, so its keys still reach the replay.
+ */
+function ownedElsewhere(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
-  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+  return (
+    target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+    target.closest('[data-slot="dialog-content"]') !== null
+  )
 }
 
 function longStep(): number {
@@ -69,7 +77,7 @@ export function useShortcuts(moments: Moment[], toggleHelp: () => void): void {
   useEffect(() => {
     const actions = handlers(moments, toggleHelp)
     const onKey = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || typing(event.target)) return
+      if (event.defaultPrevented || ownedElsewhere(event.target)) return
       const action = keyAction(event)
       if (action === null || (event.repeat && !REPEATABLE.has(action))) return
       event.preventDefault()
