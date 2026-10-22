@@ -1,6 +1,8 @@
 # Contribuir
 
-Issues and pull requests in English are fine. O resto deste guia está em português.
+You can write issues and pull requests in Portuguese or English. The rest of this guide is in Portuguese.
+
+Issue e PR podem ser em português ou inglês. Os PRs do próprio projeto saem em português.
 
 ## Issue
 
@@ -16,7 +18,7 @@ Issues and pull requests in English are fine. O resto deste guia está em portug
 5. Mudou algo visível? Ponha screenshots de antes e depois no PR, desktop e celular.
 6. Decisão de arquitetura nova vira um ADR curto em `docs/adr/`.
 
-Commits e título do PR em [Conventional Commits](https://www.conventionalcommits.org/), em inglês, sem emoji, assunto até 72 caracteres sem ponto final: `fix(rcg): keep the last playmode across a clip`.
+Commits e título do PR em [Conventional Commits](https://www.conventionalcommits.org/), em inglês, sem emoji, assunto até 72 caracteres sem ponto final: `fix(rcg): keep the last playmode across a clip`. O `just install` liga um hook `commit-msg` que confere isso a cada commit, e o workflow `PR title` confere o título.
 
 Texto da interface em português do Brasil. As regras de código (camadas, estilo, segurança, fonte da verdade do formato) estão no [AGENTS.md](AGENTS.md).
 
