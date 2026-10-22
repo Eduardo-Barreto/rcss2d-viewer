@@ -62,6 +62,8 @@ test.describe('GIF do lance', () => {
     const dialog = await openClip(page)
     await dialog.getByLabel('Do ciclo').fill('1')
     await dialog.getByLabel('Até o ciclo').fill('300')
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 20 })
     await dialog.getByRole('button', { name: 'Gerar GIF' }).click()
     const cancel = dialog.getByRole('button', { name: 'Cancelar' })
     await expect(cancel).toBeFocused()

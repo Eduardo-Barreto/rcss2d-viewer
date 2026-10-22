@@ -16,13 +16,16 @@ const REPEATABLE = new Set<KeyAction>([
   'zoomOut',
 ])
 
-/** Keys typed into a field or pressed inside a modal belong to them, not to the replay behind. */
+/**
+ * Keys typed into a field or pressed inside a modal dialog belong to them, not to the replay
+ * behind. The phone panel is a non-modal sheet, so its keys still reach the replay.
+ */
 function ownedElsewhere(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return (
     target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
-    target.closest('[role="dialog"]') !== null
+    target.closest('[data-slot="dialog-content"]') !== null
   )
 }
 
