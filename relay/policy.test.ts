@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 
-import { ALLOWED_COMMANDS, RateLimit, checkCommand, isAllowedOrigin, isLoopback } from './policy.ts'
+import {
+  ALLOWED_COMMANDS,
+  LEGACY_ORIGIN_UNTIL,
+  RateLimit,
+  checkCommand,
+  isAllowedOrigin,
+  isLoopback,
+} from './policy.ts'
 
 describe('isAllowedOrigin', () => {
   test.each([
@@ -13,6 +20,8 @@ describe('isAllowedOrigin', () => {
     'http://127.0.0.1:4173',
     'http://rcss2d-viewer.localhost:1355',
     'http://localhost',
+    'https://rcss2d-viewer.localhost',
+    'https://localhost:5173',
   ])('lets %s in', (origin) => {
     expect(isAllowedOrigin(origin)).toBe(true)
   })
@@ -30,7 +39,9 @@ describe('isAllowedOrigin', () => {
     'https://a.b.rcss2d-viewer.pages.dev',
     'https://feat-live.rcss2d-viewer.pages.dev:8443',
     'http://feat-live.rcss2d-viewer.pages.dev',
-    'https://localhost:5173',
+    'https://192.168.0.10:5173',
+    'https://evil.rcss2d-viewer.localhost',
+    'ws://localhost:5173',
     'http://192.168.0.10:5173',
     'http://localhost.evil.example',
     'http://localhost:5173/path',
@@ -39,6 +50,13 @@ describe('isAllowedOrigin', () => {
     'file://',
   ])('refuses %s', (origin) => {
     expect(isAllowedOrigin(origin)).toBe(false)
+  })
+
+  test('the old viewer host is still within its transition period', () => {
+    const until = Date.parse(`${LEGACY_ORIGIN_UNTIL}T23:59:59Z`)
+    expect(Date.now(), 'drop LEGACY_VIEWER_ORIGIN and its test cases (ADR 0006)').toBeLessThan(
+      until,
+    )
   })
 
   test('a missing Origin only with allowMissing', () => {
