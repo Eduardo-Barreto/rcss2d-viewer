@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { type RefObject, useEffect, useId, useRef, useState } from 'react'
 
 import type { Analysis } from '@/analysis/analyze'
 import { Button } from '@/components/ui/button'
@@ -96,6 +96,7 @@ function useClipExport(source: Source, onDone: () => void) {
 }
 
 interface CycleFieldProps {
+  ref?: RefObject<HTMLInputElement | null>
   label: string
   value: string
   invalid: boolean
@@ -104,7 +105,15 @@ interface CycleFieldProps {
   onChange: (value: string) => void
 }
 
-function CycleField({ label, value, invalid, disabled, describedBy, onChange }: CycleFieldProps) {
+function CycleField({
+  ref,
+  label,
+  value,
+  invalid,
+  disabled,
+  describedBy,
+  onChange,
+}: CycleFieldProps) {
   const id = useId()
   return (
     <div className="flex flex-col gap-1.5">
@@ -118,6 +127,7 @@ function CycleField({ label, value, invalid, disabled, describedBy, onChange }: 
         inputMode="numeric"
         min={0}
         onChange={(event) => onChange(event.target.value)}
+        ref={ref}
         type="number"
         value={value}
       />
@@ -141,7 +151,12 @@ function Progress({ value, onCancel }: { value: number; onCancel: () => void }) 
   )
 }
 
-function ClipForm({ onDone, ...source }: Source & { onDone: () => void }) {
+interface ClipFormProps extends Source {
+  first: RefObject<HTMLInputElement | null>
+  onDone: () => void
+}
+
+function ClipForm({ first, onDone, ...source }: ClipFormProps) {
   const statusId = useId()
   const [range, setRange] = useState(() => {
     const { frame } = useReplay.getState()
@@ -171,6 +186,7 @@ function ClipForm({ onDone, ...source }: Source & { onDone: () => void }) {
           disabled={running}
           invalid={!check.ok}
           label="Do ciclo"
+          ref={first}
           onChange={(from) => edit({ ...range, from })}
           value={range.from}
         />
@@ -206,11 +222,18 @@ export function ClipDialog({ open, onOpenChange }: ClipDialogProps) {
   const match = useReplay((s) => s.match)
   const analysis = useReplay((s) => s.analysis)
   const name = useReplay((s) => s.name)
+  const first = useRef<HTMLInputElement>(null)
   if (match === null || analysis === null) return null
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="w-[min(400px,calc(100vw-24px))]">
+      <DialogContent
+        className="w-[min(400px,calc(100vw-24px))]"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          first.current?.focus()
+        }}
+      >
         <div className="flex items-start gap-3">
           <div className="flex flex-1 flex-col gap-1">
             <DialogTitle>Salvar GIF do lance</DialogTitle>
@@ -227,6 +250,7 @@ export function ClipDialog({ open, onOpenChange }: ClipDialogProps) {
         {open ? (
           <ClipForm
             analysis={analysis}
+            first={first}
             match={match}
             name={name}
             onDone={() => onOpenChange(false)}

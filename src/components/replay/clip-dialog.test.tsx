@@ -57,6 +57,12 @@ describe('ClipDialog', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Gerar GIF' }).disabled).toBe(true)
   })
 
+  test('puts the caret on the first cycle', () => {
+    showing(200)
+    render(<ClipDialog onOpenChange={() => undefined} open />)
+    expect(document.activeElement).toBe(screen.getByLabelText('Do ciclo'))
+  })
+
   test('closes from a visible button', () => {
     showing(10)
     const onOpenChange = mock((_: boolean) => undefined)
