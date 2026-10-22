@@ -17,6 +17,7 @@ Algumas coisas que ajudam:
 - `?` abre a lista de atalhos. Espaço toca e pausa, `G` vai para o próximo gol.
 - `/app?url=https://…/partida.rcg.gz` abre um log pelo endereço, se o servidor dele liberar CORS.
 - `#t=1234` no final do endereço pula para o ciclo 1234. Dá para mandar o link de um lance para alguém.
+- "Salvar GIF do lance", no menu `⋯`, grava um trecho como GIF animado, que dá para colar numa issue ou num post. Na sua máquina, `just clip partida.rcg.gz 2595 2745` faz o mesmo pela linha de comando.
 - Abre `.rcg` de texto nas versões 4 a 6, com ou sem gzip. O rcssserver 19 grava a v6. O formato binário antigo (v1 a v3) não abre.
 
 <img src="docs/img/landing-desktop.png" alt="Página inicial" width="560"> <img src="docs/img/app-mobile.png" alt="App no celular" width="200">

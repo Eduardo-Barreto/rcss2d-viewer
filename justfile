@@ -102,6 +102,12 @@ e2e *args:
 clip-rcg input from to output:
     bun scripts/clip-rcg.ts "$@"
 
+# Export cycles from..to of a .rcg(.gz) as an animated GIF drawn by the app's renderer, for issues and posts (--json, --mp4, --rcg; ADR 0007)
+[group('dev')]
+[no-cd]
+clip input from to *args:
+    @bun "{{ justfile_directory() }}/scripts/clip.ts" "$@"
+
 # Refuse a diff that changes src/ without touching a test
 [group('quality')]
 policy:
