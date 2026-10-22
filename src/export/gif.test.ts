@@ -30,6 +30,28 @@ function encode(frames: Uint8ClampedArray[]): Uint8Array {
   return writer.finish()
 }
 
+function grayRamp(): Uint8ClampedArray {
+  const rgba = new Uint8ClampedArray(W * H * 4)
+  for (let i = 0; i < rgba.length; i += 4) {
+    const level = (i / 4) % 256
+    rgba.set([level, level, (level * 7) % 256, 255], i)
+  }
+  return rgba
+}
+
+function hasNear(palette: number[][], [r, g, b]: [number, number, number]): boolean {
+  return palette.some(([pr = 0, pg = 0, pb = 0]) => Math.hypot(pr - r, pg - g, pb - b) < 16)
+}
+
+describe('gifPalette', () => {
+  test('keeps a color that only a small swatch has', () => {
+    const red = new Uint8ClampedArray(16 * 16 * 4)
+    for (let i = 0; i < red.length; i += 4) red.set([230, 40, 40, 255], i)
+    expect(hasNear(gifPalette([grayRamp()]), [230, 40, 40])).toBe(false)
+    expect(hasNear(gifPalette([red, grayRamp()]), [230, 40, 40])).toBe(true)
+  })
+})
+
 describe('gifWriter', () => {
   test('writes a looping GIF89a with one frame per call at the given delay', () => {
     const gif = readGif(encode([solid(10, 20, 30), solid(200, 100, 0), solid(10, 20, 30)]))

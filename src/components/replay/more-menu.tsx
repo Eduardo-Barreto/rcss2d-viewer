@@ -1,6 +1,6 @@
 import { CircleHelp, Crosshair, Ellipsis, Film, ImageDown, Moon, Sun, Unplug } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import {
   DropdownMenu,
@@ -42,13 +42,14 @@ export function MoreMenu({ onHelp, follow = false }: MoreMenuProps) {
   const connected = useReplay((s) => s.live !== null && s.live.phase !== 'ended')
   const disconnect = useReplay((s) => s.disconnect)
   const [clip, setClip] = useState(false)
+  const trigger = useRef<HTMLButtonElement>(null)
 
   return (
     <>
       <DropdownMenu>
         <Hint label="Mais opções" side="bottom">
           <DropdownMenuTrigger asChild>
-            <IslandButton aria-label="Mais opções">
+            <IslandButton aria-label="Mais opções" ref={trigger}>
               <Ellipsis aria-hidden className="size-4" />
             </IslandButton>
           </DropdownMenuTrigger>
@@ -94,7 +95,7 @@ export function MoreMenu({ onHelp, follow = false }: MoreMenuProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ClipDialog onOpenChange={setClip} open={clip} />
+      <ClipDialog onOpenChange={setClip} open={clip} returnFocus={trigger} />
     </>
   )
 }

@@ -43,6 +43,41 @@ test.describe('GIF do lance', () => {
     await expect(dialog.getByRole('button', { name: 'Gerar GIF' })).toBeDisabled()
   })
 
+  test('Espaço em "Gerar GIF" gera o GIF e não toca a partida atrás', async ({ page }) => {
+    const dialog = await openClip(page)
+    await dialog.getByLabel('Do ciclo').fill('20')
+    await dialog.getByLabel('Até o ciclo').fill('40')
+    await dialog.getByRole('button', { name: 'Gerar GIF' }).focus()
+    const saved = page.waitForEvent('download')
+    await page.keyboard.press('Space')
+    expect((await saved).suggestedFilename()).toBe('rcss2d-mirror-300-ciclo-20-40.gif')
+    await expect(page.getByRole('button', { name: 'Reproduzir' })).toBeVisible()
+  })
+
+  test('Cancelar para o desenho, não baixa nada e devolve o foco', async ({ page }) => {
+    let downloads = 0
+    page.on('download', () => {
+      downloads++
+    })
+    const dialog = await openClip(page)
+    await dialog.getByLabel('Do ciclo').fill('1')
+    await dialog.getByLabel('Até o ciclo').fill('300')
+    await dialog.getByRole('button', { name: 'Gerar GIF' }).click()
+    const cancel = dialog.getByRole('button', { name: 'Cancelar' })
+    await expect(cancel).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(dialog.getByRole('button', { name: 'Gerar GIF' })).toBeFocused()
+    await expect(dialog.getByRole('progressbar')).toHaveCount(0)
+    expect(downloads).toBe(0)
+  })
+
+  test('Esc fecha a janela e devolve o foco para "Mais opções"', async ({ page }) => {
+    await openClip(page)
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Mais opções' })).toBeFocused()
+  })
+
   test('atende WCAG 2.1 AA com a janela aberta', async ({ page }) => {
     await openClip(page)
     expect(await blocking(page)).toEqual([])
@@ -63,7 +98,7 @@ test.describe('just clip', () => {
       expect(run.status).toBe(0)
       const report: unknown = JSON.parse(run.stdout)
       expect(report).toMatchObject({ gif: out, from: 10, to: 40, width: 720, height: 516 })
-      expect(report).toHaveProperty('frames', expect.any(Number))
+      expect(report).toHaveProperty('frames', 31)
       const gif = readFileSync(out)
       expect(gif.subarray(0, GIF_MAGIC.length).toString('latin1')).toBe(GIF_MAGIC)
       expect(report).toHaveProperty('bytes', gif.length)

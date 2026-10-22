@@ -37,6 +37,13 @@ function canvas() {
   return { ctx: ctx as unknown as CanvasRenderingContext2D, sized }
 }
 
+function failure(pending: Promise<unknown>): Promise<unknown> {
+  return pending.then(
+    () => null,
+    (error: unknown) => error,
+  )
+}
+
 const options = {
   match,
   analysis: analyzeMatch(match),
@@ -62,15 +69,41 @@ describe('exportClipGif', () => {
     expect(new Set(gif.delaysMs)).toEqual(new Set([100]))
   })
 
-  test('stops when aborted', async () => {
+  test('does not draw a frame when the signal is already aborted', async () => {
     const controller = new AbortController()
     controller.abort()
+    const progress: number[] = []
     const pending = exportClipGif(canvas().ctx, {
       ...options,
       from: 1,
       to: 40,
       signal: controller.signal,
+      onProgress: (done) => progress.push(done),
     })
-    expect(pending).rejects.toThrow('Exportação cancelada.')
+    expect(await failure(pending)).toMatchObject({
+      name: 'AbortError',
+      message: 'Exportação cancelada.',
+    })
+    expect(progress).toEqual([])
+  })
+
+  test('stops at the next frame when aborted midway', async () => {
+    const controller = new AbortController()
+    const progress: number[] = []
+    const pending = exportClipGif(canvas().ctx, {
+      ...options,
+      from: 1,
+      to: 40,
+      signal: controller.signal,
+      onProgress: (done) => {
+        progress.push(done)
+        if (done === 12) controller.abort()
+      },
+    })
+    expect(await failure(pending)).toMatchObject({
+      name: 'AbortError',
+      message: 'Exportação cancelada.',
+    })
+    expect(progress.at(-1)).toBe(12)
   })
 })

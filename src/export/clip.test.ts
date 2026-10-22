@@ -31,6 +31,7 @@ const CYCLES = [1, 2, 3, 4, 4, 4, 5, 6, 7, 8]
 const match = parseRcgText(
   rcgText(
     '(team 1 Azul Laranja 2 1)',
+    '(playmode 1 play_on)',
     ...CYCLES.map((cycle) =>
       showLine(cycle, [cycle, 0, 0, 0], [{ side: 'l', unum: 1, x: -50, y: 0 }]),
     ),
@@ -124,5 +125,6 @@ describe('drawClipFrame', () => {
     expect(drawn).toContain('Azul')
     expect(drawn).toContain('Laranja')
     expect(drawn).toContain('2 × 1')
+    expect(drawn).toContain('Bola rolando')
   })
 })

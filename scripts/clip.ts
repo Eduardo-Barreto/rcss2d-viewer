@@ -17,7 +17,12 @@ import { gunzipSync, gzipSync } from 'node:zlib'
 
 import { chromium } from '@playwright/test'
 
-import type { HeadlessReply, HeadlessRequest } from '../src/export/headless-protocol.ts'
+import {
+  CLIP_MAX_WIDTH,
+  CLIP_MIN_WIDTH,
+  type HeadlessReply,
+  type HeadlessRequest,
+} from '../src/export/headless-protocol.ts'
 import { clipLog } from './clip-rcg.ts'
 
 const ROOT = join(import.meta.dir, '..')
@@ -53,11 +58,10 @@ export interface ClipArgs {
 export class UsageError extends Error {}
 
 function cycle(raw: string | undefined, name: string): number {
-  const value = Number(raw)
-  if (raw === undefined || !Number.isInteger(value) || value < 0) {
+  if (raw === undefined || !/^\d+$/.test(raw)) {
     throw new UsageError(`${name} must be a cycle number, got ${String(raw)}`)
   }
-  return value
+  return Number(raw)
 }
 
 /** Default output: the log's name with the cycles, in the current directory. */
@@ -85,8 +89,11 @@ function readArgv(argv: readonly string[]) {
 }
 
 function widthOf(raw: string | undefined): number {
-  const width = raw === undefined ? DEFAULT_WIDTH : Number(raw)
-  if (!Number.isInteger(width) || width <= 0) throw new UsageError('width must be a pixel count')
+  if (raw === undefined) return DEFAULT_WIDTH
+  const width = Number(raw)
+  if (!/^\d+$/.test(raw) || width < CLIP_MIN_WIDTH || width > CLIP_MAX_WIDTH) {
+    throw new UsageError(`width must be between ${CLIP_MIN_WIDTH} and ${CLIP_MAX_WIDTH} pixels`)
+  }
   return width
 }
 
@@ -161,8 +168,10 @@ async function render(args: ClipArgs, log: Uint8Array): Promise<HeadlessReply> {
   const browser = await chromium.launch()
   try {
     const tab = await browser.newPage()
-    await tab.route(`${ORIGIN}/**`, (route) => {
-      const file = files[new URL(route.request().url()).pathname]
+    await tab.route('**/*', (route) => {
+      const url = new URL(route.request().url())
+      if (url.origin !== ORIGIN) return route.abort()
+      const file = files[url.pathname]
       return file === undefined
         ? route.fulfill({ status: 404 })
         : route.fulfill({ body: Buffer.from(file.body), contentType: file.type })

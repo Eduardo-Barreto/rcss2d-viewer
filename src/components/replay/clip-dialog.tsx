@@ -24,6 +24,8 @@ import { IslandButton } from './island'
 export interface ClipDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Gets the focus back when the dialog closes, usually the control that opened it. */
+  returnFocus?: RefObject<HTMLElement | null>
 }
 
 function fileName(name: string, from: number, to: number): string {
@@ -135,7 +137,13 @@ function CycleField({
   )
 }
 
-function Progress({ value, onCancel }: { value: number; onCancel: () => void }) {
+interface ProgressProps {
+  value: number
+  onCancel: () => void
+  cancelRef: RefObject<HTMLButtonElement | null>
+}
+
+function Progress({ value, onCancel, cancelRef }: ProgressProps) {
   return (
     <div className="flex items-center gap-3">
       <progress
@@ -144,11 +152,27 @@ function Progress({ value, onCancel }: { value: number; onCancel: () => void }) 
         max={1}
         value={value}
       />
-      <Button onClick={onCancel} type="button" variant="ghost">
+      <Button onClick={onCancel} ref={cancelRef} type="button" variant="ghost">
         Cancelar
       </Button>
     </div>
   )
+}
+
+/** Moves the focus to "Cancelar" while drawing and back to "Gerar GIF" when it stops. */
+function useRunFocus(running: boolean) {
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+  const started = useRef(false)
+  useEffect(() => {
+    if (running) {
+      started.current = true
+      cancelRef.current?.focus()
+    } else if (started.current) {
+      submitRef.current?.focus()
+    }
+  }, [running])
+  return { cancelRef, submitRef }
 }
 
 interface ClipFormProps extends Source {
@@ -167,6 +191,7 @@ function ClipForm({ first, onDone, ...source }: ClipFormProps) {
   const check = checkClip(source.match, source.analysis.physics.stepMs, range.from, range.to)
   const status = summary(check, job.failure)
   const running = job.progress !== null
+  const { cancelRef, submitRef } = useRunFocus(running)
   const edit = (next: typeof range) => {
     job.reset()
     setRange(next)
@@ -207,18 +232,18 @@ function ClipForm({ first, onDone, ...source }: ClipFormProps) {
         {status.text}
       </p>
       {job.progress === null ? (
-        <Button className="self-end" disabled={!check.ok} type="submit">
+        <Button className="self-end" disabled={!check.ok} ref={submitRef} type="submit">
           Gerar GIF
         </Button>
       ) : (
-        <Progress onCancel={job.cancel} value={job.progress} />
+        <Progress cancelRef={cancelRef} onCancel={job.cancel} value={job.progress} />
       )}
     </form>
   )
 }
 
 /** Range picker and progress for "Salvar GIF do lance". Draws with the pitch's own renderer. */
-export function ClipDialog({ open, onOpenChange }: ClipDialogProps) {
+export function ClipDialog({ open, onOpenChange, returnFocus }: ClipDialogProps) {
   const match = useReplay((s) => s.match)
   const analysis = useReplay((s) => s.analysis)
   const name = useReplay((s) => s.name)
@@ -232,6 +257,11 @@ export function ClipDialog({ open, onOpenChange }: ClipDialogProps) {
         onOpenAutoFocus={(event) => {
           event.preventDefault()
           first.current?.focus()
+        }}
+        onCloseAutoFocus={(event) => {
+          if (returnFocus?.current == null) return
+          event.preventDefault()
+          returnFocus.current.focus()
         }}
       >
         <div className="flex items-start gap-3">

@@ -7,6 +7,7 @@ import { gifPalette, gifWriter } from './gif'
 
 const YIELD_EVERY = 10
 const PALETTE_SAMPLES = 4
+const SWATCH_PX = 16
 
 /** What {@link exportClipGif} needs. */
 export interface ClipOptions {
@@ -30,13 +31,29 @@ export interface ClipResult extends ClipRange {
   height: number
 }
 
-function pause(signal: AbortSignal | undefined): Promise<void> {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (signal?.aborted === true) reject(new DOMException('Exportação cancelada.', 'AbortError'))
-      else resolve()
-    }, 0)
+function stopIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted === true) throw new DOMException('Exportação cancelada.', 'AbortError')
+}
+
+function yieldToPage(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0)
   })
+}
+
+/**
+ * One square of every theme color. Colors that only show up in a few frames (a foul ring, a
+ * card) may miss the sampled frames, and the swatches keep them in the color table anyway.
+ */
+function paintSwatches(ctx: CanvasRenderingContext2D, palette: Palette): Uint8ClampedArray {
+  const table: Record<keyof Palette, string> = palette
+  const colors = Object.values(table)
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  colors.forEach((color, i) => {
+    ctx.fillStyle = color
+    ctx.fillRect(i * SWATCH_PX, 0, SWATCH_PX, SWATCH_PX)
+  })
+  return ctx.getImageData(0, 0, colors.length * SWATCH_PX, SWATCH_PX).data
 }
 
 function sampleFrames(range: ClipRange): number[] {
@@ -50,13 +67,14 @@ function sampleFrames(range: ClipRange): number[] {
  * Renders cycles `from..to` with the app's renderer onto `ctx`, one GIF frame per log frame at
  * the log's own step (100 ms is real time), and returns the GIF. The context's canvas is
  * resized to the clip. It yields to the event loop every few frames, so a page can show
- * progress and abort through `signal`.
+ * progress and abort through `signal`, which is checked before every frame.
  */
 export async function exportClipGif(
   ctx: CanvasRenderingContext2D,
   options: ClipOptions,
 ): Promise<ClipResult> {
   const { match, analysis, palette, signal } = options
+  stopIfAborted(signal)
   const range = clipRange(match, options.from, options.to)
   const size = clipSize(options.width ?? CLIP_WIDTH)
   ctx.canvas.width = size.width
@@ -69,12 +87,14 @@ export async function exportClipGif(
     size.width,
     size.height,
     analysis.physics.stepMs,
-    gifPalette(sampleFrames(range).map(paint)),
+    gifPalette([paintSwatches(ctx, palette), ...sampleFrames(range).map(paint)]),
   )
   for (let i = 0; i < range.count; i++) {
+    stopIfAborted(signal)
     writer.add(paint(range.start + i))
     options.onProgress?.(i + 1, range.count)
-    if ((i + 1) % YIELD_EVERY === 0) await pause(signal)
+    if ((i + 1) % YIELD_EVERY === 0) await yieldToPage()
   }
+  stopIfAborted(signal)
   return { ...range, gif: writer.finish(), width: size.width, height: size.height }
 }

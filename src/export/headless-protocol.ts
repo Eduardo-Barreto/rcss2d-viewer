@@ -1,5 +1,9 @@
 /** Messages between `scripts/clip.ts` and the page it drives (`headless.ts`). No DOM here, so the CLI can import it. */
 
+/** Narrowest and widest clip in pixels. */
+export const CLIP_MIN_WIDTH = 320
+export const CLIP_MAX_WIDTH = 1600
+
 /** What the CLI asks for. */
 export interface HeadlessRequest {
   log: string

@@ -7,12 +7,12 @@ import { PITCH_MARGIN, type Viewport, fitCamera } from '@/render/camera'
 import type { Palette } from '@/render/palette'
 import { type Overlays, drawScene } from '@/render/scene'
 
+import { CLIP_MAX_WIDTH, CLIP_MIN_WIDTH } from './headless-protocol'
+
 /** Longest clip, in log frames: 60 s of play keeps a GIF inside what GitHub proxies. */
 const CLIP_MAX_FRAMES = 600
 /** Default clip width in pixels. */
 export const CLIP_WIDTH = 720
-const MIN_WIDTH = 320
-const MAX_WIDTH = 1600
 /** Height of the strip above the pitch with the cycle, the score and the play mode. */
 const HUD_PX = 28
 const HUD_FONT_PX = 13
@@ -120,7 +120,7 @@ export function checkClip(match: Match, stepMs: number, from: string, to: string
 
 /** Clip size for a width in pixels: the whole pitch, with its margin, under the strip. */
 export function clipSize(width = CLIP_WIDTH): ClipSize {
-  const w = Math.round(Math.min(Math.max(width, MIN_WIDTH), MAX_WIDTH))
+  const w = Math.round(Math.min(Math.max(width, CLIP_MIN_WIDTH), CLIP_MAX_WIDTH))
   const pitch = Math.round(
     (w * (PITCH_WIDTH + PITCH_MARGIN * 2)) / (PITCH_LENGTH + PITCH_MARGIN * 2),
   )

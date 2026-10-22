@@ -59,6 +59,11 @@ describe('parseClipArgs', () => {
       ['a.rcg', '1', '2', 'extra'],
       ['a.rcg', '1', '2', '--theme', 'blue'],
       ['a.rcg', '1', '2', '--width', '-3'],
+      ['a.rcg', '1', '2', '--width', '200'],
+      ['a.rcg', '1', '2', '--width', '2000'],
+      ['a.rcg', '', '2'],
+      ['a.rcg', '1e3', '2000'],
+      ['a.rcg', '0x10', '20'],
     ]) {
       expect(() => parseClipArgs(argv)).toThrow(UsageError)
     }
