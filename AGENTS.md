@@ -1,6 +1,6 @@
 # Como trabalhar neste repositório
 
-Regras para quem muda o viewer, seja pessoa ou ferramenta automática. O uso está no `README.md`, a arquitetura em `docs/arquitetura.md` e as decisões em `docs/adr/`.
+Regras para quem muda o viewer, seja pessoa ou ferramenta automática. O uso está no `README.md`, o guia curto de contribuição no `CONTRIBUTING.md`, a arquitetura em `docs/arquitetura.md` e as decisões em `docs/adr/`.
 
 ## O que é
 
@@ -24,10 +24,10 @@ O `.rcg` vem de fora, então é dado não confiável.
 
 ## Comandos
 
-- `just` lista as receitas. `just verify` é o gate (lint, format, tipos, knip, testes de unidade, build). `just e2e` roda o Playwright. `just ci` roda os dois, é o que vale antes de pedir merge enquanto o GitHub Actions estiver parado.
+- `just` lista as receitas. `just verify` é o gate (lint, format, tipos, knip, testes de unidade, build). `just e2e` roda o Playwright. `just ci` roda os dois. O GitHub Actions roda o mesmo gate, o semgrep e o e2e em todo PR; `just ci` verde é o que se confere antes de pedir merge.
 - `bun run dev` sobe o Vite via portless (`rcss2d-viewer.localhost`). `bun run dev:host` expõe em `0.0.0.0`, que é o que o Playwright usa.
 - `just clip-rcg <entrada.rcg> <de> <até> <saída.rcg.gz>` corta os ciclos `de..até` de um `.rcg` de texto (v4 a v6) num `.rcg.gz`, mantendo o cabeçalho, os logos e o último `playmode` e `team` antes do corte. Imprime uma linha JSON com a saída e o tamanho sem compressão. Foi assim que saiu o trecho da página inicial (`src/components/landing/clip/`); a origem e o comando exato estão no ADR 0005.
-- `just deploy` publica no Cloudflare Pages (projeto `rcss2d-viewer`, `rcssviewer.barreto.sh`). Só roda na `main` limpa e igual à `origin/main`, depois de `just ci`.
+- `just deploy` publica no Cloudflare Pages (projeto `rcss2d-viewer`, `rcssviewer.tapout.gg`). Só roda na `main` limpa e igual à `origin/main`, depois de `just ci`.
 
 ## Stack
 
@@ -54,6 +54,6 @@ Camadas, de baixo para cima, cada uma só importa as de baixo:
 ## Fluxo
 
 - Trabalho em branch e PR para `main`. Nunca push direto na `main`.
-- Commits e títulos de PR em Conventional Commits, em inglês, sem emoji, assunto até 72 caracteres sem ponto final: `feat(render): draw the offside line`. Sem rodapé de atribuição. O hook `commit-msg` do workspace confere.
-- O corpo do PR, em português, diz o que mudou, por quê, as decisões e as alternativas descartadas, e traz screenshots antes e depois (desktop e celular) de toda mudança visível.
+- Commits e títulos de PR em Conventional Commits, em inglês, sem emoji, assunto até 72 caracteres sem ponto final: `feat(render): draw the offside line`. Sem rodapé de atribuição. O hook `commit-msg` do lefthook e o workflow `PR title` conferem o formato com `scripts/commit-msg.ts`.
+- O corpo do PR diz o que mudou, por quê, as decisões e as alternativas descartadas, e traz screenshots antes e depois (desktop e celular) de toda mudança visível. PRs do próprio projeto são escritos em português; quem contribui de fora pode escrever em português ou inglês.
 - Decisão de arquitetura nova ou revista ganha um ADR curto em `docs/adr/`.

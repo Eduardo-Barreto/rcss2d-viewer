@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const port = 5185
+const DEFAULT_PORT = 5185
+const port = Number(process.env.E2E_PORT ?? DEFAULT_PORT)
 const baseURL = `http://localhost:${port}`
 
 /** The live smoke against a real rcssserver; `just live-smoke` starts the server and relay. */

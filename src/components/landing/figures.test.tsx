@@ -70,7 +70,7 @@ describe('KeysFigure', () => {
 
 describe('LinkFigure', () => {
   test('links to the address it shows and highlights the cycle', () => {
-    const href = 'https://rcssviewer.barreto.sh/app?url=https%3A%2F%2Fx.dev%2Fa.rcg.gz#t=2711'
+    const href = 'https://rcssviewer.tapout.gg/app?url=https%3A%2F%2Fx.dev%2Fa.rcg.gz#t=2711'
     render(<LinkFigure href={href} />)
     expect(screen.getByRole('link', { name: /x\.dev%2Fa\.rcg\.gz/ })).toHaveAttribute('href', href)
     expect(screen.getByText('#t=2711')).toBeVisible()

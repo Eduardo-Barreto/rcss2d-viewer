@@ -2,6 +2,8 @@
 
 Status: aceito, 2026-10-21
 
+Nota de 2026-10-21: o site mudou para https://rcssviewer.tapout.gg ([ADR 0006](0006-codigo-aberto-e-dominio.md)). O texto abaixo fala do endereço da época.
+
 ## Contexto
 
 O Eduardo quer abrir um `.rcg` e ver a partida, com análise, em `rcssviewer.barreto.sh`. O `.rcg` já traz tudo o que o replay precisa: posição, velocidade, direção, fôlego e estado de cada jogador e da bola em cada ciclo, o modo de jogo, o placar e os parâmetros do servidor. O rcssserver gera o log, mas não é preciso rodá-lo para assistir.

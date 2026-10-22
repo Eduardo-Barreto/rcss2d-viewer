@@ -2,6 +2,8 @@
 
 Status: aceito, 2026-10-21
 
+Nota de 2026-10-21: o site mudou para https://rcssviewer.tapout.gg ([ADR 0006](0006-codigo-aberto-e-dominio.md)). O texto abaixo fala do endereço da época.
+
 ## Contexto
 
 Quem chega em https://rcssviewer.barreto.sh sem um log na mão via só o botão de abrir arquivo, sem saber o que o viewer faz nem por que usar no lugar do rcssmonitor. Os links já compartilhados apontam para a raiz com `?url=`, `#t=` e, com o modo ao vivo, `?live=`. Eles não podem quebrar.
@@ -23,6 +25,7 @@ Quem chega em https://rcssviewer.barreto.sh sem um log na mão via só o botão 
 `src/components/landing/clip/robocup2026-final.rcg.gz` (216 KB, 1.238.584 bytes descomprimido) é um recorte da final da RoboCup 2026, HELIOS2026 0 × 1 YuShan2026.
 
 - Origem: página Logs & Bins da RoboCup 2026 em rcss.dev, arquivo `rc26_day4_finals_logs.tar.gz` (Google Drive, id `1IpXRyGrj9O6maZDPbe1YXu6bVWw8e-hY`).
+- Termos: a página Logs & Bins não declara licença. O trecho fica fora da GPL do repositório, com a origem no `NOTICE` (ADR 0006).
 - Log dentro do arquivo: `logs/U/GdwD62P/GdwD62P_server1_HELIOS2026_0-vs-YuShan2026_1.rcg` (ULG6), sha256 `8783fe04bf9bbbf873e5cf1825280d1313338d8dac29917f79651ff7e89eba29`.
 - Ciclos 2490 a 2725: 316 quadros, com a falta do ciclo 2516, dois chutes a gol e o gol do YuShan2026 no ciclo 2711.
 - Para refazer: `just clip-rcg <log.rcg> 2490 2725 src/components/landing/clip/robocup2026-final.rcg.gz`. O script guarda o cabeçalho inteiro (parâmetros, tipos de jogador e os logos dos times do ciclo 0) e o último `playmode` e `team` antes do trecho, para o placar e o modo de jogo começarem certos.

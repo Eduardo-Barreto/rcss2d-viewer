@@ -23,9 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Tooling state
-.omc
-
 # Env
 .env
 .env.*
@@ -39,7 +36,6 @@ playwright-report
 
 # Planning / scratch (never versioned)
 plans/
-advisor-plans/
 *spec.md
 *specs.md
 *discussion.md
