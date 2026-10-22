@@ -32,15 +32,27 @@ dev *args:
 relay *args:
     bun relay/main.ts "$@"
 
-# Follow a real rcssserver end to end in containers (image with rcssserver as entrypoint, see README)
+# Build rcssserver from the official release tarball into the image live-smoke uses by default
 [group('quality')]
-live-smoke image="rcss-server:19.0.0-2026.10.1" port="6301" conf=env("RCSS_SERVER_CONF", ""):
+rcssserver-image tag="rcss2d-viewer-rcssserver:19.0.0":
+    docker build --network host -f e2e/rcssserver.Dockerfile -t "$1" e2e
+
+# Follow a real rcssserver end to end in containers (Linux only, see README)
+[group('quality')]
+live-smoke image="rcss2d-viewer-rcssserver:19.0.0" port="6301" conf=env("RCSS_SERVER_CONF", ""):
     #!/usr/bin/env bash
     set -euo pipefail
+    # Linux only: the relay container runs the host's bun binary, so it has to be a Linux build.
+    # The `${a[@]+"${a[@]}"}` form keeps an empty array legal under `set -u` on older bash.
+    mount=()
     include=()
     if [ -n "$3" ]; then
-        conf="$(realpath "$3")"
-        include=(-v "$conf:/arena/server.conf:ro")
+        if [ ! -f "$3" ]; then
+            echo "live-smoke: server conf not found: $3" >&2
+            exit 2
+        fi
+        mount=(-v "$(realpath "$3"):/arena/server.conf:ro")
+        include=(--include=/arena/server.conf)
     fi
     net=rcss-net-viewer-smoke
     cleanup() {
@@ -53,8 +65,8 @@ live-smoke image="rcss-server:19.0.0-2026.10.1" port="6301" conf=env("RCSS_SERVE
     # carry back, so the relay runs next to it and only its WebSocket port is published.
     docker network create --label rcss.viewer=smoke "$net" >/dev/null
     docker run -d --rm --name rcss-viewer-smoke-server --label rcss.viewer=smoke --network "$net" \
-        --memory 512m --cpus 1 -e HOME=/tmp -w /tmp "${include[@]}" "$1" \
-        ${include[@]:+--include=/arena/server.conf} server::synch_mode=false server::half_time=20 \
+        --memory 512m --cpus 1 -e HOME=/tmp -w /tmp ${mount[@]+"${mount[@]}"} "$1" \
+        ${include[@]+"${include[@]}"} server::synch_mode=false server::half_time=20 \
         server::game_logging=false server::text_logging=false >/dev/null
     ip="$(docker inspect -f "{{{{(index .NetworkSettings.Networks \"$net\").IPAddress}}" rcss-viewer-smoke-server)"
     docker run -d --rm --name rcss-viewer-smoke-relay --label rcss.viewer=smoke --network "$net" \
