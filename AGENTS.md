@@ -40,8 +40,8 @@ Camadas, de baixo para cima, cada uma só importa as de baixo:
 - `src/rcg/`: o parser. Puro, sem React e sem DOM.
 - `src/analysis/`: eventos, posse, passes, chutes, estatísticas e séries derivadas do `Match`. Puro.
 - `src/render/`: desenho do campo no canvas e a câmera. Sem React.
-- `src/export/`: o GIF de um trecho (quadros, faixa de placar, encoder). Sem React.
 - `src/player/`: o estado do replay (quadro, velocidade, seleção, camadas).
+- `src/export/`: o GIF de um trecho (quadros, faixa de placar, encoder). Sem React; usa só as funções puras de `player/format.ts`. `headless.ts` é a entrada do `just clip` no Chromium e o único arquivo dela que mexe em DOM.
 - `src/components/` e `src/routes/`: a interface.
 
 ## Convenções

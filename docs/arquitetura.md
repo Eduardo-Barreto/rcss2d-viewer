@@ -28,10 +28,10 @@ Navegador: Chrome pede permissão de rede local para a página `https` falar com
 Cada camada importa só as de baixo:
 
 ```
-rcg → analysis → render → export → player → components, routes
+rcg → analysis → render → player → export → components, routes
 ```
 
-`relay/` roda fora do navegador e não importa nada de `src/`. `rcg`, `analysis`, `render` e `export` não importam React nem DOM (`render` e `export` recebem o contexto do canvas pronto). `export` usa também as funções puras de `player/format.ts`. Isso deixa o grosso do código testável com `bun test`, sem navegador.
+`relay/` roda fora do navegador e não importa nada de `src/`. `rcg`, `analysis`, `render` e `export` não importam React nem DOM (`render` e `export` recebem o contexto do canvas pronto). `export` usa só as funções puras de `player/format.ts`, nada do estado. A exceção é `src/export/headless.ts`, a entrada do `just clip` no Chromium, que busca o log e lê o tema da página. Isso deixa o grosso do código testável com `bun test`, sem navegador.
 
 ## De onde vêm os números
 
