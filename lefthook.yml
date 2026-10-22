@@ -12,6 +12,11 @@ pre-commit:
     - name: typecheck
       run: bun run typecheck
 
+commit-msg:
+  jobs:
+    - name: conventional-commit
+      run: bun scripts/commit-msg.ts {1}
+
 pre-push:
   parallel: true
   commands:
