@@ -4,7 +4,9 @@
  * route, each with its own title, description, canonical and social tags, and the landing page
  * with its real text inside `#root`. There is no server rendering and no hydration: `createRoot`
  * replaces that text when the bundle runs, so what a crawler or a visitor without JavaScript
- * reads is what the page says once it is up.
+ * reads is what the page says once it is up. The markup is written by hand rather than rendered
+ * from the React tree (the figures are canvases), so it cannot be hydrated: `public/boot.js`
+ * hides it for visitors with JavaScript until the app mounts, and it stays visible without.
  *
  *   bun scripts/prerender.ts [dist-dir]
  *
