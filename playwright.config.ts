@@ -20,7 +20,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: 'prerender.spec.ts',
+      testIgnore: ['real/**', 'prerender.spec.ts'],
       use: { ...devices['Desktop Chrome'] },
     },
     {
