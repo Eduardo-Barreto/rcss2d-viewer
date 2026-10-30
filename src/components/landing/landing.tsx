@@ -10,21 +10,27 @@ import { cycleAt } from '@/player/format'
 import { type Clip, clipLink } from './clip'
 import { ClipCanvas } from './clip-canvas'
 import type { FrameWindow } from './clip-windows'
-import { COPY } from './copy'
+import { COPY as APP_COPY, type Locale } from './copy'
+import { CopyProvider } from './copy-context'
+import { useCopy } from './copy-state'
 import { LayersDemo, MomentsDemo, StatsDemo } from './demos'
 import { Comparison, KeysFigure, LinkFigure, LiveFigure, SafetyFacts } from './figures'
+import { COPY_BY_LOCALE } from './locales'
 import { PitchFrame } from './pitch-frame'
 import { useClip } from './use-clip'
 import { useOpenLog } from './use-open-log'
 
+/** The language of every page outside the landing: the replay app is Portuguese. */
+const APP_LANG = APP_COPY.lang
 const heroSpan = (clip: Clip): FrameWindow => clip.hero
 const PAGE = 'mx-auto w-full max-w-[1120px] px-5 md:px-8'
 const LEAD = 'text-[15px] leading-6 text-pretty text-muted-foreground'
 
 function ThemeToggle() {
+  const copy = useCopy()
   const { resolvedTheme, setTheme } = useTheme()
   const dark = resolvedTheme === 'dark'
-  const label = dark ? COPY.nav.light : COPY.nav.dark
+  const label = dark ? copy.nav.light : copy.nav.dark
   return (
     <Button
       aria-label={label}
@@ -40,14 +46,21 @@ function ThemeToggle() {
 }
 
 function Header() {
+  const copy = useCopy()
+  const { language } = copy.nav
   return (
     <header className={`${PAGE} flex h-16 items-center justify-between`}>
-      <span className="text-[15px] font-semibold tracking-[-0.01em]">{COPY.brand}</span>
-      <nav aria-label={COPY.nav.label} className="flex items-center gap-1">
+      <span className="text-[15px] font-semibold tracking-[-0.01em]">{copy.brand}</span>
+      <nav aria-label={copy.nav.label} className="flex items-center gap-1">
         <ThemeToggle />
         <Button asChild className="h-9 rounded-[10px] px-3 text-[13px]" variant="ghost">
+          <Link hrefLang={language.lang} lang={language.lang} to={language.path}>
+            {language.text}
+          </Link>
+        </Button>
+        <Button asChild className="h-9 rounded-[10px] px-3 text-[13px]" variant="ghost">
           <Link to={APP_PATH}>
-            {COPY.nav.app}
+            {copy.nav.app}
             <ArrowRight aria-hidden />
           </Link>
         </Button>
@@ -58,10 +71,11 @@ function Header() {
 
 /** The primary action, a button that opens the page's one file input. */
 function PickButton({ onPick }: { onPick: () => void }) {
+  const copy = useCopy()
   return (
     <Button className="h-11 rounded-[12px] px-4 text-[14px]" onClick={onPick}>
       <FileUp aria-hidden />
-      {COPY.hero.pick}
+      {copy.hero.pick}
     </Button>
   )
 }
@@ -74,6 +88,7 @@ interface HeroProps {
 }
 
 function Hero({ clip, failed, onPick }: HeroProps) {
+  const copy = useCopy()
   const [frame, setFrame] = useState(-1)
   const cycle = clip === null || frame < 0 ? null : cycleAt(clip.match, frame)
 
@@ -87,35 +102,35 @@ function Hero({ clip, failed, onPick }: HeroProps) {
           className="text-[34px] leading-[1.08] font-semibold tracking-[-0.025em] text-balance md:text-[46px]"
           id="hero-title"
         >
-          {COPY.hero.title}
+          {copy.hero.title}
         </h1>
-        <p className={`${LEAD} max-w-[44ch] md:text-[16px] md:leading-7`}>{COPY.hero.lead}</p>
+        <p className={`${LEAD} max-w-[44ch] md:text-[16px] md:leading-7`}>{copy.hero.lead}</p>
         <div className="flex flex-wrap items-center gap-2">
           <PickButton onPick={onPick} />
           <Button asChild className="h-11 rounded-[12px] px-4 text-[14px]" variant="secondary">
             <a href={clipLink()}>
               <Play aria-hidden />
-              {COPY.hero.openClip}
+              {copy.hero.openClip}
             </a>
           </Button>
         </div>
-        <p className="text-[13px] text-muted-foreground">{COPY.hero.drop}</p>
+        <p className="text-[13px] text-muted-foreground">{copy.hero.drop}</p>
       </div>
       <figure className="flex flex-col gap-3">
         <PitchFrame>
           <ClipCanvas clip={clip} onFrame={setFrame} span={heroSpan} />
           <p className="absolute bottom-3 left-3 rounded-[8px] bg-card px-2 py-1 font-mono text-[12px] shadow-island tabular-nums">
-            {failed ? COPY.error : null}
-            {!failed && cycle === null ? COPY.hero.loading : null}
-            {cycle === null ? null : `${COPY.hero.cycle} ${cycle}`}
+            {failed ? copy.error : null}
+            {!failed && cycle === null ? copy.hero.loading : null}
+            {cycle === null ? null : `${copy.hero.cycle} ${cycle}`}
           </p>
         </PitchFrame>
         <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-[13px]">
           <span>
-            <span className="font-medium">{COPY.hero.match}</span>
-            <span className="text-muted-foreground"> · {COPY.hero.score}</span>
+            <span className="font-medium">{copy.hero.match}</span>
+            <span className="text-muted-foreground"> · {copy.hero.score}</span>
           </span>
-          <span className="text-muted-foreground">{COPY.hero.figure}</span>
+          <span className="text-muted-foreground">{copy.hero.figure}</span>
         </figcaption>
       </figure>
     </section>
@@ -153,6 +168,7 @@ function Section({ id, title, body, children, stacked = false }: SectionProps) {
 }
 
 function DropOverlay({ dragging }: { dragging: boolean }) {
+  const copy = useCopy()
   return (
     <div
       aria-hidden
@@ -160,54 +176,66 @@ function DropOverlay({ dragging }: { dragging: boolean }) {
       data-on={dragging ? '' : undefined}
     >
       <p className="rounded-[10px] bg-card px-3 py-2 text-[13px] font-medium shadow-island">
-        {COPY.hero.dropping}
+        {copy.hero.dropping}
       </p>
     </div>
   )
 }
 
-/** The landing page: what the viewer does, shown with its own renderer on a real match. */
-export function Landing() {
-  const { clip, failed } = useClip()
+/** The landing page in one language: what the viewer does, shown on a real match. */
+export function Landing({ locale = 'pt-BR' }: { locale?: Locale }) {
+  const copy = COPY_BY_LOCALE[locale]
+  return (
+    <CopyProvider copy={copy}>
+      <LandingPage />
+    </CopyProvider>
+  )
+}
+
+function LandingPage() {
+  const copy = useCopy()
+  const { clip, failed } = useClip(copy.moments.labels)
   const { openFiles, dragging } = useOpenLog()
   const input = useRef<HTMLInputElement>(null)
   const pick = () => input.current?.click()
 
   useEffect(() => {
-    const before = document.title
-    document.title = COPY.title
+    const { title } = document
+    document.title = copy.title
+    document.documentElement.lang = copy.lang
     return () => {
-      document.title = before
+      document.title = title
+      document.documentElement.lang = APP_LANG
     }
-  }, [])
+  }, [copy])
 
   return (
     <div className="min-h-svh bg-background">
       <Header />
       <main>
         <Hero clip={clip} failed={failed} onPick={pick} />
-        <Section body={COPY.moments.body} id="lances" title={COPY.moments.title}>
+        <Section body={copy.moments.body} id="lances" title={copy.moments.title}>
           <MomentsDemo clip={clip} />
         </Section>
-        <Section body={COPY.layers.body} id="camadas" title={COPY.layers.title}>
+        <Section body={copy.layers.body} id="camadas" title={copy.layers.title}>
           <LayersDemo clip={clip} />
         </Section>
-        <Section body={COPY.stats.body} id="numeros" title={COPY.stats.title}>
+        <Section body={copy.stats.body} id="numeros" title={copy.stats.title}>
           <StatsDemo clip={clip} />
         </Section>
-        <Section body={COPY.link.body} id="link" title={COPY.link.title}>
+        <Section body={copy.link.body} id="link" title={copy.link.title}>
           <LinkFigure href={clipLink()} />
         </Section>
-        <Section body={COPY.keys.body} id="teclado" title={COPY.keys.title}>
+        <Section body={copy.keys.body} id="teclado" title={copy.keys.title}>
           <KeysFigure />
         </Section>
-        <Section body={COPY.live.body} id="ao-vivo" title={COPY.live.title}>
+        <Section body={copy.live.body} id="ao-vivo" title={copy.live.title}>
           <LiveFigure />
         </Section>
-        <Section body={COPY.safety.body} id="seguranca" stacked title={COPY.safety.title}>
+        <Section body={copy.safety.body} id="seguranca" stacked title={copy.safety.title}>
           <SafetyFacts />
         </Section>
-        <Section body={COPY.comparison.body} id="comparacao" stacked title={COPY.comparison.title}>
+        <Section body={copy.comparison.body} id="comparacao" stacked title={copy.comparison.title}>
           <Comparison />
         </Section>
         <section
@@ -215,23 +243,24 @@ export function Landing() {
           className={`${PAGE} flex flex-col items-start gap-4 border-t border-border py-16 md:py-24`}
         >
           <h2 className="text-[28px] leading-9 font-semibold tracking-[-0.015em]" id="fim">
-            {COPY.closing.title}
+            {copy.closing.title}
           </h2>
-          <p className={LEAD}>{COPY.closing.body}</p>
+          <p className={LEAD}>{copy.closing.body}</p>
           <PickButton onPick={pick} />
         </section>
       </main>
       <footer className={`${PAGE} border-t border-border py-8 text-[12px] text-muted-foreground`}>
-        <p>{COPY.footer.text}</p>
+        <p>{copy.footer.text}</p>
+        {copy.footer.appNote === '' ? null : <p className="mt-1">{copy.footer.appNote}</p>}
         <p className="mt-1">
-          <a className="underline underline-offset-2" href={COPY.footer.tapoutHref}>
-            {COPY.footer.tapout}
+          <a className="underline underline-offset-2" href={copy.footer.tapoutHref}>
+            {copy.footer.tapout}
           </a>
         </p>
       </footer>
       <input
         accept=".rcg,.gz,application/gzip"
-        aria-label={COPY.hero.input}
+        aria-label={copy.hero.input}
         className="hidden"
         onChange={(event) => openFiles(event.target.files)}
         ref={input}

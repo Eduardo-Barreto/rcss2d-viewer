@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 
 import { COPY } from '@/components/landing/copy'
+import { COPY_EN } from '@/components/landing/copy-en'
 
 import {
   PAGES,
@@ -18,9 +19,10 @@ const SHELL = `<!doctype html><html lang="pt-BR"><head><title>rcssviewer</title>
 const CLIP = '/assets/robocup2026-final.rcg-abc123.gz'
 
 const index = renderPage(SHELL, PAGES.index, landingHtml(CLIP))
+const en = renderPage(SHELL, PAGES.en, landingHtml(CLIP, COPY_EN))
 const app = renderPage(SHELL, PAGES.app, null)
 const notFound = renderPage(SHELL, PAGES['404'], null)
-const pages = { index, app, notFound }
+const pages = { index, en, app, notFound }
 
 function count(html: string, pattern: RegExp): number {
   return html.match(pattern)?.length ?? 0
@@ -29,7 +31,7 @@ function count(html: string, pattern: RegExp): number {
 describe('prerendered routes', () => {
   test('each route has its own title', () => {
     const titles = Object.values(pages).map((html) => /<title>(.*?)<\/title>/.exec(html)?.[1])
-    expect(new Set(titles).size).toBe(3)
+    expect(new Set(titles).size).toBe(4)
     expect(titles[0]).toContain('.rcg')
     expect(titles[0]).toContain('RoboCup Soccer Simulation 2D')
   })
@@ -38,6 +40,44 @@ describe('prerendered routes', () => {
     expect(count(index, /rel="canonical"/g)).toBe(1)
     expect(index).toContain(`<link rel="canonical" href="${SITE}/" />`)
     expect(index).not.toContain('noindex')
+  })
+
+  test('the English page is its own indexable file in English', () => {
+    expect(en).toContain('<html lang="en">')
+    expect(index).toContain('<html lang="pt-BR">')
+    expect(en).toContain(`<title>${COPY_EN.title}</title>`)
+    expect(count(en, /rel="canonical"/g)).toBe(1)
+    expect(en).toContain(`<link rel="canonical" href="${SITE}/en" />`)
+    expect(en).toContain(`<meta property="og:url" content="${SITE}/en" />`)
+    expect(en).toContain('<meta property="og:locale" content="en_US" />')
+    expect(en).toContain('<meta property="og:locale:alternate" content="pt_BR" />')
+    expect(en).not.toContain('noindex')
+    expect(en).toContain(`<h1`)
+    expect(en).toContain(COPY_EN.hero.title)
+    expect(en).not.toContain(COPY.hero.title)
+    expect(en).toContain('<div id="root"><div')
+  })
+
+  test('both languages list the same hreflang set, themselves included', () => {
+    const set = [
+      `<link rel="alternate" hreflang="pt-BR" href="${SITE}/" />`,
+      `<link rel="alternate" hreflang="en" href="${SITE}/en" />`,
+      `<link rel="alternate" hreflang="x-default" href="${SITE}/" />`,
+    ]
+    for (const html of [index, en]) {
+      for (const link of set) expect(html).toContain(link)
+      expect(count(html, /hreflang=/g)).toBe(3 + 1)
+    }
+    for (const html of [app, notFound]) expect(html).not.toContain('rel="alternate"')
+  })
+
+  test('each landing links to the other as a real anchor', () => {
+    expect(index).toMatch(/<a [^>]*href="\/en" hreflang="en" lang="en">English<\/a>/)
+    expect(en).toMatch(/<a [^>]*href="\/" hreflang="pt-BR" lang="pt-BR">Português<\/a>/)
+  })
+
+  test('only the Portuguese home carries the WebSite JSON-LD', () => {
+    expect(en).not.toContain('ld+json')
   })
 
   test('the app canonicals to /app and is noindex', () => {
@@ -126,8 +166,11 @@ describe('static files', () => {
     expect(robots).toContain(`Sitemap: ${SITE}/sitemap.xml`)
   })
 
-  test('the sitemap lists only the home, with no invented dates', () => {
-    expect(sitemap.match(/<loc>(.*?)<\/loc>/g)).toEqual([`<loc>${SITE}/</loc>`])
+  test('the sitemap lists both languages of the home, with no invented dates', () => {
+    expect(sitemap.match(/<loc>(.*?)<\/loc>/g)).toEqual([
+      `<loc>${SITE}/</loc>`,
+      `<loc>${SITE}/en</loc>`,
+    ])
     expect(sitemap).not.toMatch(/lastmod|priority|changefreq/)
   })
 })

@@ -3,7 +3,21 @@
  * same shape. The replay app keeps its own strings next to its components.
  */
 
+import type { MomentLabels } from '@/player/moments'
 import { DEFAULT_LIMITS } from '@/rcg/parser'
+
+/** The languages the landing page is written in. */
+export type Locale = 'pt-BR' | 'en'
+
+/** Where each language's landing page lives. */
+export type LandingPath = '/' | '/en'
+
+/** The link from one language's page to the other's. */
+export interface LanguageLink {
+  text: string
+  lang: Locale
+  path: LandingPath
+}
 
 /** Who has a feature in the comparison table. */
 export type Support = 'yes' | 'no' | 'partial'
@@ -21,8 +35,15 @@ const MIB = 1_048_576
 const THOUSAND = 1000
 const { maxBytes, maxFrames } = DEFAULT_LIMITS
 
+const english: LanguageLink = { text: 'English', lang: 'en', path: '/en' }
+
 /** The pt-BR copy of the landing page. */
 export const COPY = {
+  lang: 'pt-BR' as Locale,
+  path: '/' as LandingPath,
+  ogLocale: 'pt_BR',
+  ogAlt:
+    'O replay de uma partida da RoboCup Soccer Simulation 2D no rcssviewer, com o painel de números dos dois times.',
   title: 'Viewer de logs .rcg da RoboCup Soccer Simulation 2D | rcssviewer',
   description:
     'Abra logs .rcg v4 a v6, com ou sem gzip, da RoboCup Soccer Simulation 2D no navegador. Lances marcados, estatísticas e mapa de calor. O arquivo não sai do seu computador.',
@@ -30,6 +51,7 @@ export const COPY = {
   nav: {
     label: 'Principal',
     app: 'Abrir o app',
+    language: english,
     dark: 'Tema escuro',
     light: 'Tema claro',
   },
@@ -54,6 +76,7 @@ export const COPY = {
     figure:
       'A lista de lances desse trecho da final. O lance da vez acende enquanto o trecho passa.',
     list: 'Lances do trecho',
+    labels: null as MomentLabels | null,
   },
   layers: {
     title: 'Uma camada por vez',
@@ -73,6 +96,7 @@ export const COPY = {
     title: 'Números de cada time e de cada jogador',
     body: 'Posse, chutes, passes certos, desarmes e distância corrida saem do próprio log. Clique num jogador e o painel mostra gols, passes, faltas sofridas e o fôlego dele ao longo do jogo.',
     figure: 'Os números desse trecho, calculados agora pelo navegador.',
+    rows: null as readonly string[] | null,
   },
   link: {
     title: 'Um link abre a partida no lance',
@@ -83,6 +107,9 @@ export const COPY = {
     title: 'Dá para fazer tudo pelo teclado',
     body: 'É a mesma lista que o app mostra quando você aperta ?.',
     figure: 'Atalhos do replay',
+    or: 'ou',
+    shortcuts: null as readonly string[] | null,
+    keyNames: null as Readonly<Record<string, string>> | null,
   },
   live: {
     title: 'Ao vivo, voltando no meio do jogo',
@@ -222,6 +249,10 @@ export const COPY = {
     text: 'Feito para a RoboCup Soccer Simulation 2D. O motor do jogo continua sendo o rcssserver oficial.',
     tapout: 'Mais robótica de competição no tapout.gg',
     tapoutHref: 'https://tapout.gg',
+    appNote: '',
   },
   error: 'Não deu para carregar o lance de exemplo.',
 }
+
+/** The shape every language's copy has. */
+export type Copy = typeof COPY
