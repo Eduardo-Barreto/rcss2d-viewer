@@ -23,7 +23,9 @@ const { maxBytes, maxFrames } = DEFAULT_LIMITS
 
 /** The pt-BR copy of the landing page. */
 export const COPY = {
-  title: 'rcssviewer · replay da Soccer Simulation 2D no navegador',
+  title: 'Viewer de logs .rcg da RoboCup Soccer Simulation 2D | rcssviewer',
+  description:
+    'Abra logs .rcg v4 a v6, com ou sem gzip, da RoboCup Soccer Simulation 2D no navegador. Lances marcados, estatísticas e mapa de calor. O arquivo não sai do seu computador.',
   brand: 'rcssviewer',
   nav: {
     label: 'Principal',
@@ -96,6 +98,7 @@ export const COPY = {
     title: 'O arquivo fica com você',
     body: 'O log é lido num Web Worker, no seu navegador, e nada é enviado para servidor nenhum. Uma linha malformada é pulada e entra na contagem do painel. Só é recusado o arquivo que não é um replay ou que passa dos limites, antes de travar a aba.',
     facts: [
+      'Lê .rcg de texto v4 a v6, com ou sem gzip.',
       'Nenhum byte do log sai do seu navegador.',
       `Até ${maxBytes / MIB} MiB de texto descompactado.`,
       `Até ${maxFrames / THOUSAND} mil quadros por partida.`,
@@ -215,7 +218,10 @@ export const COPY = {
     title: 'Tem um .rcg aí?',
     body: 'Solte aqui ou escolha o arquivo.',
   },
-  footer:
-    'Feito para a RoboCup Soccer Simulation 2D. O motor do jogo continua sendo o rcssserver oficial.',
+  footer: {
+    text: 'Feito para a RoboCup Soccer Simulation 2D. O motor do jogo continua sendo o rcssserver oficial.',
+    tapout: 'Mais robótica de competição no tapout.gg',
+    tapoutHref: 'https://tapout.gg',
+  },
   error: 'Não deu para carregar o lance de exemplo.',
 }

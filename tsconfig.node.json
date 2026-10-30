@@ -30,5 +30,6 @@
     ".oxlint-plugins/**/*.ts",
     "e2e/**/*.ts",
     "relay/**/*.ts"
-  ]
+  ],
+  "exclude": ["scripts/prerender.ts", "scripts/prerender.test.ts"]
 }

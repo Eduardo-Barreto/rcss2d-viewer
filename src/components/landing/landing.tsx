@@ -222,7 +222,12 @@ export function Landing() {
         </section>
       </main>
       <footer className={`${PAGE} border-t border-border py-8 text-[12px] text-muted-foreground`}>
-        {COPY.footer}
+        <p>{COPY.footer.text}</p>
+        <p className="mt-1">
+          <a className="underline underline-offset-2" href={COPY.footer.tapoutHref}>
+            {COPY.footer.tapout}
+          </a>
+        </p>
       </footer>
       <input
         accept=".rcg,.gz,application/gzip"
