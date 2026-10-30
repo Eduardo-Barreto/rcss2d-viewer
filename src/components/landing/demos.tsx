@@ -12,7 +12,7 @@ import { type TimelineMark, drawTimeline } from '@/render/timeline'
 import type { Clip } from './clip'
 import { ClipCanvas } from './clip-canvas'
 import type { FrameWindow } from './clip-windows'
-import { COPY } from './copy'
+import { useCopy } from './copy-state'
 import { type LayerKey, LAYER_KEYS, activeMoment, layerAt, overlaysOf } from './demo-state'
 import { PitchFrame } from './pitch-frame'
 import { useReducedMotion } from './use-motion'
@@ -87,6 +87,7 @@ function Strip({ clip, frame }: { clip: Clip; frame: number }) {
 
 /** The clip next to its list of moments, the current one lit as the clip plays. */
 export function MomentsDemo({ clip }: { clip: Clip | null }) {
+  const copy = useCopy()
   const [frame, setFrame] = useState(0)
   const current = clip === null ? null : activeMoment(clip.moments, frame)
   return (
@@ -99,7 +100,7 @@ export function MomentsDemo({ clip }: { clip: Clip | null }) {
           {clip === null ? <div className="h-6" /> : <Strip clip={clip} frame={frame} />}
         </div>
         <ol
-          aria-label={COPY.moments.list}
+          aria-label={copy.moments.list}
           className="flex min-h-[260px] flex-col gap-0.5 text-[13px] md:min-h-0"
         >
           {(clip?.moments ?? []).map((moment) => (
@@ -115,13 +116,14 @@ export function MomentsDemo({ clip }: { clip: Clip | null }) {
           ))}
         </ol>
       </div>
-      <figcaption className="text-[13px] text-muted-foreground">{COPY.moments.figure}</figcaption>
+      <figcaption className="text-[13px] text-muted-foreground">{copy.moments.figure}</figcaption>
     </figure>
   )
 }
 
 /** The clip with one layer at a time, cycling until a layer is picked. */
 export function LayersDemo({ clip }: { clip: Clip | null }) {
+  const copy = useCopy()
   const reduced = useReducedMotion()
   const [pinned, setPinned] = useState<LayerKey | 'auto'>('auto')
   const [tick, setTick] = useState(0)
@@ -153,11 +155,11 @@ export function LayersDemo({ clip }: { clip: Clip | null }) {
           aria-live={pinned === 'auto' ? 'off' : 'polite'}
           className="absolute top-3 left-3 rounded-[8px] bg-card px-2 py-1 text-[12px] font-medium shadow-island"
         >
-          {COPY.layers.names[layer]}
+          {copy.layers.names[layer]}
         </p>
       </PitchFrame>
       <fieldset>
-        <legend className="sr-only">{COPY.layers.group}</legend>
+        <legend className="sr-only">{copy.layers.group}</legend>
         <div className="flex flex-wrap gap-1 rounded-[14px] bg-card p-1 shadow-island">
           {choices.map((key) => (
             <label
@@ -172,12 +174,12 @@ export function LayersDemo({ clip }: { clip: Clip | null }) {
                 type="radio"
                 value={key}
               />
-              {key === 'auto' ? COPY.layers.auto : COPY.layers.names[key]}
+              {key === 'auto' ? copy.layers.auto : copy.layers.names[key]}
             </label>
           ))}
         </div>
       </fieldset>
-      <figcaption className="text-[13px] text-muted-foreground">{COPY.layers.figure}</figcaption>
+      <figcaption className="text-[13px] text-muted-foreground">{copy.layers.figure}</figcaption>
     </figure>
   )
 }
@@ -203,6 +205,7 @@ function Bar({ l, r }: { l: number; r: number }) {
 
 /** The team comparison of the clip, computed in the page from the clip itself. */
 export function StatsDemo({ clip }: { clip: Clip | null }) {
+  const copy = useCopy()
   const rows = useMemo(() => (clip === null ? [] : comparisonRows(clip.analysis)), [clip])
   return (
     <figure className="flex flex-col gap-3">
@@ -218,11 +221,13 @@ export function StatsDemo({ clip }: { clip: Clip | null }) {
           </span>
         </div>
         <ul className="flex min-h-[260px] flex-col gap-3">
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <li className="flex flex-col gap-1.5" key={row.label}>
               <div className="flex items-baseline justify-between gap-2 text-[13px]">
                 <span className="font-mono tabular-nums">{row.text.l}</span>
-                <span className="text-[12px] text-muted-foreground">{row.label}</span>
+                <span className="text-[12px] text-muted-foreground">
+                  {copy.stats.rows?.[index] ?? row.label}
+                </span>
                 <span className="font-mono tabular-nums">{row.text.r}</span>
               </div>
               <Bar l={row.l} r={row.r} />
@@ -230,7 +235,7 @@ export function StatsDemo({ clip }: { clip: Clip | null }) {
           ))}
         </ul>
       </div>
-      <figcaption className="text-[13px] text-muted-foreground">{COPY.stats.figure}</figcaption>
+      <figcaption className="text-[13px] text-muted-foreground">{copy.stats.figure}</figcaption>
     </figure>
   )
 }

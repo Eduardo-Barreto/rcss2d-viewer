@@ -4,22 +4,26 @@ import { Fragment } from 'react'
 import { cn } from '@/lib/utils'
 import { SHORTCUTS, type Shortcut } from '@/player/keys'
 
-import { COPY, type ComparisonRow, type Support } from './copy'
+import { type ComparisonRow, type Support } from './copy'
+import { useCopy } from './copy-state'
 
 const CAPTION = 'text-[13px] text-muted-foreground'
 
 function Keys({ shortcut }: { shortcut: Shortcut }) {
+  const copy = useCopy()
   return (
     <span className="flex flex-wrap items-center justify-end gap-1">
       {shortcut.keys.map((combo, index) => (
         <Fragment key={combo.join('+')}>
-          {index > 0 ? <span className="px-0.5 text-[12px] text-muted-foreground">ou</span> : null}
+          {index > 0 ? (
+            <span className="px-0.5 text-[12px] text-muted-foreground">{copy.keys.or}</span>
+          ) : null}
           {combo.map((key) => (
             <kbd
               className="min-w-6 rounded-[6px] bg-muted px-1.5 py-0.5 text-center font-mono text-[12px]"
               key={key}
             >
-              {key}
+              {copy.keys.keyNames?.[key] ?? key}
             </kbd>
           ))}
         </Fragment>
@@ -30,28 +34,30 @@ function Keys({ shortcut }: { shortcut: Shortcut }) {
 
 /** The replay's own shortcut list, so the page never drifts from the app. */
 export function KeysFigure() {
+  const copy = useCopy()
   return (
     <figure className="flex flex-col gap-3">
       <dl className="flex flex-col rounded-[18px] bg-card px-5 py-3 text-[13px] shadow-island">
-        {SHORTCUTS.map((shortcut) => (
+        {SHORTCUTS.map((shortcut, index) => (
           <div
             className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-b border-border py-2 last:border-b-0"
             key={shortcut.label}
           >
-            <dt>{shortcut.label}</dt>
+            <dt>{copy.keys.shortcuts?.[index] ?? shortcut.label}</dt>
             <dd className="ml-auto">
               <Keys shortcut={shortcut} />
             </dd>
           </div>
         ))}
       </dl>
-      <figcaption className={CAPTION}>{COPY.keys.figure}</figcaption>
+      <figcaption className={CAPTION}>{copy.keys.figure}</figcaption>
     </figure>
   )
 }
 
 /** The address that opens the final at the goal, as a real link. */
 export function LinkFigure({ href }: { href: string }) {
+  const copy = useCopy()
   const [address, cycle] = href.split('#')
   return (
     <figure className="flex flex-col gap-3">
@@ -67,17 +73,18 @@ export function LinkFigure({ href }: { href: string }) {
           )}
         </code>
       </a>
-      <figcaption className={CAPTION}>{COPY.link.figure}</figcaption>
+      <figcaption className={CAPTION}>{copy.link.figure}</figcaption>
     </figure>
   )
 }
 
 /** Server, relay and browser, the path a live match takes. */
 export function LiveFigure() {
+  const copy = useCopy()
   return (
     <figure className="flex flex-col gap-3">
       <ol className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
-        {COPY.live.steps.map((step, index) => (
+        {copy.live.steps.map((step, index) => (
           <li className="contents" key={step.name}>
             {index > 0 ? (
               <ArrowRight
@@ -92,16 +99,17 @@ export function LiveFigure() {
           </li>
         ))}
       </ol>
-      <figcaption className={CAPTION}>{COPY.live.figure}</figcaption>
+      <figcaption className={CAPTION}>{copy.live.figure}</figcaption>
     </figure>
   )
 }
 
 /** The limits that keep a bad file from hurting the tab. */
 export function SafetyFacts() {
+  const copy = useCopy()
   return (
     <ul className="grid max-w-[720px] gap-x-8 gap-y-2 text-[15px] leading-6 md:grid-cols-2">
-      {COPY.safety.facts.map((fact) => (
+      {copy.safety.facts.map((fact) => (
         <li className="flex items-baseline gap-3" key={fact}>
           <span
             aria-hidden
@@ -123,7 +131,8 @@ const MARK: Record<Support, string> = {
 const SUPPORTS: Support[] = ['yes', 'partial', 'no']
 
 function Legend() {
-  const { comparison } = COPY
+  const copy = useCopy()
+  const { comparison } = copy
   return (
     <ul
       aria-label={comparison.legend}
@@ -140,13 +149,14 @@ function Legend() {
 }
 
 function Cell({ value }: { value: ComparisonRow['viewer'] }) {
+  const copy = useCopy()
   return (
     <td className="relative py-2.5 pr-3 pl-7 align-top">
       <span
         aria-hidden
         className={cn('absolute top-[15px] left-3 size-2 rounded-full', MARK[value.support])}
       />
-      <span className="sr-only">{COPY.comparison.support[value.support]}. </span>
+      <span className="sr-only">{copy.comparison.support[value.support]}. </span>
       {value.text}
     </td>
   )
@@ -154,7 +164,8 @@ function Cell({ value }: { value: ComparisonRow['viewer'] }) {
 
 /** The comparison with rcssmonitor, rows where it wins included. */
 export function Comparison() {
-  const { comparison } = COPY
+  const copy = useCopy()
+  const { comparison } = copy
   return (
     <div className="flex flex-col gap-3">
       <Legend />

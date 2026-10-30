@@ -21,16 +21,36 @@ export interface Moment {
   strong: boolean
 }
 
+/** The words of a moment's text, so another language can say the same moments. */
+export interface MomentLabels {
+  goalFor: (team: string) => string
+  goalBy: (player: string) => string
+  ownGoalBy: (player: string) => string
+  shot: (onTarget: boolean, player: string) => string
+  fouled: (player: string) => string
+  card: (red: boolean, player: string) => string
+  playMode: (mode: number) => string
+}
+
+/** The Portuguese texts the replay app shows. */
+const PT_MOMENT_LABELS: MomentLabels = {
+  goalFor: (team) => `Gol: ${team}`,
+  goalBy: (player) => `Gol de ${player}`,
+  ownGoalBy: (player) => `Gol contra de ${player}`,
+  shot: (onTarget, player) => `${onTarget ? 'Chute no gol' : 'Chute para fora'}: ${player}`,
+  fouled: (player) => `Falta sofrida por ${player}`,
+  card: (red, player) => `${red ? 'Vermelho' : 'Amarelo'} para ${player}`,
+  playMode: playModeLabel,
+}
+
 const CARD_KINDS = new Set<EventKind>(['yellow', 'red'])
 
-function goalMoments(match: Match, analysis: Analysis): Moment[] {
+function goalMoments(match: Match, analysis: Analysis, labels: MomentLabels): Moment[] {
   return analysis.goals.map((goal) => {
-    const team = teamName(match, goal.side)
-    let text = `Gol: ${team}`
+    let text = labels.goalFor(teamName(match, goal.side))
     if (goal.scorer >= 0) {
-      text = goal.ownGoal
-        ? `Gol contra de ${playerName(match, goal.scorer)}`
-        : `Gol de ${playerName(match, goal.scorer)}`
+      const scorer = playerName(match, goal.scorer)
+      text = goal.ownGoal ? labels.ownGoalBy(scorer) : labels.goalBy(scorer)
     }
     const cycle = match.frames.cycle[goal.frame] ?? 0
     return {
@@ -45,19 +65,19 @@ function goalMoments(match: Match, analysis: Analysis): Moment[] {
   })
 }
 
-function shotMoments(match: Match, analysis: Analysis): Moment[] {
+function shotMoments(match: Match, analysis: Analysis, labels: MomentLabels): Moment[] {
   return analysis.shots.map((shot) => ({
     frame: shot.frame,
     cycle: match.frames.cycle[shot.frame] ?? 0,
     kind: 'shot',
     side: shot.side,
     slot: shot.slot,
-    text: `${shot.onTarget ? 'Chute no gol' : 'Chute para fora'}: ${playerName(match, shot.slot)}`,
+    text: labels.shot(shot.onTarget, playerName(match, shot.slot)),
     strong: shot.onTarget,
   }))
 }
 
-function refereeMoments(match: Match, analysis: Analysis): Moment[] {
+function refereeMoments(match: Match, analysis: Analysis, labels: MomentLabels): Moment[] {
   const out: Moment[] = []
   for (const event of analysis.events) {
     const base = { frame: event.frame, cycle: event.cycle, side: event.side, slot: event.slot }
@@ -65,16 +85,15 @@ function refereeMoments(match: Match, analysis: Analysis): Moment[] {
       out.push({
         ...base,
         kind: 'foul',
-        text: `Falta sofrida por ${playerName(match, event.slot)}`,
+        text: labels.fouled(playerName(match, event.slot)),
         strong: false,
       })
     } else if (CARD_KINDS.has(event.kind)) {
       const red = event.kind === 'red'
-      const card = red ? 'Vermelho' : 'Amarelo'
       out.push({
         ...base,
         kind: 'card',
-        text: `${card} para ${playerName(match, event.slot)}`,
+        text: labels.card(red, playerName(match, event.slot)),
         strong: red,
       })
     } else if (event.kind === 'playmode') {
@@ -82,7 +101,7 @@ function refereeMoments(match: Match, analysis: Analysis): Moment[] {
       out.push({
         ...base,
         kind: 'setPiece',
-        text: `${playModeLabel(event.mode)}${who}`,
+        text: `${labels.playMode(event.mode)}${who}`,
         strong: false,
       })
     }
@@ -91,11 +110,15 @@ function refereeMoments(match: Match, analysis: Analysis): Moment[] {
 }
 
 /** Goals, shots, fouls, cards and set pieces, in frame order. */
-export function momentsOf(match: Match, analysis: Analysis): Moment[] {
+export function momentsOf(
+  match: Match,
+  analysis: Analysis,
+  labels: MomentLabels = PT_MOMENT_LABELS,
+): Moment[] {
   return [
-    ...goalMoments(match, analysis),
-    ...shotMoments(match, analysis),
-    ...refereeMoments(match, analysis),
+    ...goalMoments(match, analysis, labels),
+    ...shotMoments(match, analysis, labels),
+    ...refereeMoments(match, analysis, labels),
   ].toSorted((a, b) => a.frame - b.frame)
 }
 

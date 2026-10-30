@@ -25,5 +25,5 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true
   },
-  "include": ["src"]
+  "include": ["src", "scripts/prerender.ts", "scripts/prerender.test.ts"]
 }

@@ -9,5 +9,5 @@ export const Route = createFileRoute('/')({
       throw redirect({ to: APP_PATH, search: location.search, hash: location.hash, replace: true })
     }
   },
-  component: Landing,
+  component: () => <Landing />,
 })
